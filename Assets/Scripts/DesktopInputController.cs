@@ -481,8 +481,7 @@ public class DesktopInputController : MonoBehaviour
         
         // Movement controls
         GUILayout.Label("Movement:", GUI.skin.box);
-        GUILayout.Label("WASD: Move");
-        GUILayout.Label("QE: Turn (when not in mouse look)");
+        GUILayout.Label("WASD: Move | QE: Turn | Esc: Exit Game");
         GUILayout.Label("Right Click: Toggle Mouse Look");
         
         // Interaction controls
@@ -490,21 +489,6 @@ public class DesktopInputController : MonoBehaviour
         GUILayout.Label("Middle Click: Grab/Drop Objects");
         GUILayout.Label("Middle Click: Activate Buttons (Exit Cube)");
         GUILayout.Label("Right Click: Throw (if holding)");
-        GUILayout.Label("Escape: Exit Game");
-        
-        // Status information
-        GUILayout.Label("Status:", GUI.skin.box);
-        GUILayout.Label($"Mouse Look: {(isMouseLookActive ? "Active" : "Inactive")}");
-        GUILayout.Label($"Currently Grabbing: {(isGrabbing ? currentGrabbedObject?.name : "Nothing")}");
-        GUILayout.Label($"Move Speed: {moveSpeed}");
-        GUILayout.Label($"Turn Speed: {turnSpeed}");
-        GUILayout.Label($"Mouse Sensitivity: {mouseSensitivity}");
-        GUILayout.Label($"Interaction Distance: {interactionDistance}");
-        
-        // Input device status
-        GUILayout.Label("Devices:", GUI.skin.box);
-        GUILayout.Label($"Keyboard: {(keyboard != null ? "Connected" : "Not Found")}");
-        GUILayout.Label($"Mouse: {(mouse != null ? "Connected" : "Not Found")}");
         
         GUILayout.EndVertical();
         GUILayout.EndArea();
