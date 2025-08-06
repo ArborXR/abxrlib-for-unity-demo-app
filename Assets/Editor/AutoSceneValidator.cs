@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
+using System.IO;
 
 /// <summary>
 /// Automatically validates and fixes scene issues when Unity loads or scenes change.
@@ -31,10 +32,44 @@ public static class AutoSceneValidator
             // Longer delay to ensure Unity is fully ready for serialization changes
             EditorApplication.delayCall += () => {
                 EditorApplication.delayCall += () => {
+                    // Load Level scene as default if no scene is currently open or if a different scene is open
+                    LoadDefaultScene();
                     //Debug.Log("AutoSceneValidator: Unity startup - checking for missing script issues...");
                     ValidateCurrentScene();
                 };
             };
+        }
+    }
+
+    private static void LoadDefaultScene()
+    {
+        try
+        {
+            string levelScenePath = "Assets/Scenes/Level.unity";
+            Scene currentScene = SceneManager.GetActiveScene();
+            
+            // Only load Level scene if it's not already the active scene
+            if (string.IsNullOrEmpty(currentScene.path) || !currentScene.path.Equals(levelScenePath, System.StringComparison.OrdinalIgnoreCase))
+            {
+                // Check if the Level scene file exists
+                if (System.IO.File.Exists(levelScenePath))
+                {
+                    Debug.Log($"AutoSceneValidator: Loading default scene '{levelScenePath}'");
+                    EditorSceneManager.OpenScene(levelScenePath, OpenSceneMode.Single);
+                }
+                else
+                {
+                    Debug.LogWarning($"AutoSceneValidator: Default scene '{levelScenePath}' not found");
+                }
+            }
+            else
+            {
+                //Debug.Log("AutoSceneValidator: Level scene is already active");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"AutoSceneValidator: Failed to load default scene: {e.Message}");
         }
     }
 
