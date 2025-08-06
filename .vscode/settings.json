@@ -47,8 +47,7 @@
         "obj/": true,
         "Obj/": true,
         "temp/": true,
-        "Temp/": true,
-        "ProjectSettings/": true
+        "Temp/": true
     },
     "dotnet.defaultSolution": "abxrlib-for-unity-demo-app.sln"
 }
