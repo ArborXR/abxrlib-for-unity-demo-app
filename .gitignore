@@ -4,6 +4,7 @@
 /.cache
 .env
 .DS_Store
+.vscode/settings.json
 
 # This .gitignore file should be placed at the root of your Unity project directory
 #
@@ -67,7 +68,7 @@ ExportedObj/
 *.pidb.meta
 *.pdb.meta
 *.mdb.meta
-*.cs.meta
+# *.cs.meta
 
 # Unity3D generated file on crash reports
 sysinfo.txt
