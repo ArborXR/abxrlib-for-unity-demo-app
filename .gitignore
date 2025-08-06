@@ -98,6 +98,6 @@ crashlytics-build.properties
 */xtempburstlibs/*/*.txt
 /*_ButDontShipItWithYourGame
 /*_DoNotShip
-ProjectSettings/ProjectSettings.asset
+#ProjectSettings/ProjectSettings.asset
 Assets/Resources/*.asset
 Assets/Resources/*.meta
