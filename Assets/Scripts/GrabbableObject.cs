@@ -20,7 +20,7 @@ public class GrabbableObject : MonoBehaviour
 
     private void OnGrab(SelectEnterEventArgs args)
     {
-        Abxr.EventInteractionStart($"place_item_{Id}");
+        //Abxr.EventInteractionStart($"place_item_{Id}");
     }
 
     private void OnDestroy()
