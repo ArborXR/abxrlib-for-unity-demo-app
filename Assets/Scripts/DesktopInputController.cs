@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
+using UnityEngine.XR;
+using System.Collections.Generic;
 
 /// <summary>
 /// Provides comprehensive desktop input controls for the Unity editor when VR controllers are not available.
@@ -62,8 +64,10 @@ public class DesktopInputController : MonoBehaviour
     
     private void Start()
     {
-        // Only enable in editor
-        if (!Application.isEditor || !enableDesktopControls)
+        // Enable desktop controls only when VR headset is not active
+        bool shouldEnable = !IsVRHeadsetActive() && enableDesktopControls;
+        
+        if (!shouldEnable)
         {
             enabled = false;
             return;
@@ -71,6 +75,33 @@ public class DesktopInputController : MonoBehaviour
         
         SetupComponents();
         SetupExitCube();
+    }
+    
+    /// <summary>
+    /// Checks if a VR headset is currently active and being used.
+    /// Returns true if VR is active, false if we should use desktop controls.
+    /// </summary>
+    private bool IsVRHeadsetActive()
+    {
+        // Check if XR is enabled and a device is active
+        if (XRSettings.enabled && XRSettings.isDeviceActive)
+        {
+            return true;
+        }
+        
+        // Additional check for XR Display subsystems (newer XR SDK)
+        var displaySubsystems = new List<XRDisplaySubsystem>();
+        SubsystemManager.GetInstances(displaySubsystems);
+        
+        foreach (var display in displaySubsystems)
+        {
+            if (display.running)
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     private void SetupComponents()
@@ -480,7 +511,7 @@ public class DesktopInputController : MonoBehaviour
     
     private void OnGUI()
     {
-        if (!enabled || !Application.isEditor || !setupComplete) return;
+        if (!enabled || !setupComplete) return;
         
         GUILayout.BeginArea(new Rect(10, 10, 350, 280));
         GUILayout.BeginVertical("box");

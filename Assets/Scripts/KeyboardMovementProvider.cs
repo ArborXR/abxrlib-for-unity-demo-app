@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
+using UnityEngine.XR;
+using System.Collections.Generic;
 
 /// <summary>
 /// Provides keyboard and mouse movement controls for the Unity editor when VR controllers are not available.
@@ -42,14 +44,43 @@ public class KeyboardMovementProvider : MonoBehaviour
     
     private void Start()
     {
-        // Only enable in editor
-        if (!Application.isEditor || !enableKeyboardMovement)
+        // Enable keyboard controls only when VR headset is not active
+        bool shouldEnable = !IsVRHeadsetActive() && enableKeyboardMovement;
+        
+        if (!shouldEnable)
         {
             enabled = false;
             return;
         }
         
         SetupComponents();
+    }
+    
+    /// <summary>
+    /// Checks if a VR headset is currently active and being used.
+    /// Returns true if VR is active, false if we should use desktop controls.
+    /// </summary>
+    private bool IsVRHeadsetActive()
+    {
+        // Check if XR is enabled and a device is active
+        if (XRSettings.enabled && XRSettings.isDeviceActive)
+        {
+            return true;
+        }
+        
+        // Additional check for XR Display subsystems (newer XR SDK)
+        var displaySubsystems = new List<XRDisplaySubsystem>();
+        SubsystemManager.GetInstances(displaySubsystems);
+        
+        foreach (var display in displaySubsystems)
+        {
+            if (display.running)
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     private void SetupComponents()

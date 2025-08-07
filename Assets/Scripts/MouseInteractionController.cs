@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
+using UnityEngine.XR;
+using System.Collections.Generic;
 
 /// <summary>
 /// Provides mouse-based interaction controls for the Unity editor.
@@ -33,15 +35,75 @@ public class MouseInteractionController : MonoBehaviour
     
     private void Start()
     {
-        if (!Application.isEditor)
+        // Enable mouse controls only when VR headset is not active
+        bool shouldEnable = !IsVRHeadsetActive();
+        
+        if (!shouldEnable)
         {
             enabled = false;
             return;
         }
         
         SetupMouseInteraction();
+    }
+    
+    /// <summary>
+    /// Checks if a VR headset is currently active and being used.
+    /// Returns true if VR is active, false if we should use desktop controls.
+    /// </summary>
+    private bool IsVRHeadsetActive()
+    {
+        // Check if XR is enabled and a device is active
+        if (XRSettings.enabled && XRSettings.isDeviceActive)
+        {
+            return true;
+        }
         
-
+        // Additional check for XR Display subsystems (newer XR SDK)
+        var displaySubsystems = new List<XRDisplaySubsystem>();
+        SubsystemManager.GetInstances(displaySubsystems);
+        
+        foreach (var display in displaySubsystems)
+        {
+            if (display.running)
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private void SetupMouseInteraction()
+    {
+        //Debug.Log("MouseInteractionController: Setting up mouse interaction...");
+        
+        // Find XR Origin and camera
+        xrOrigin = FindObjectOfType<XROrigin>();
+        if (xrOrigin == null)
+        {
+            Debug.LogError("MouseInteractionController: No XROrigin found!");
+            return;
+        }
+        
+        playerCamera = xrOrigin.Camera;
+        if (playerCamera == null)
+        {
+            Debug.LogError("MouseInteractionController: No camera found!");
+            return;
+        }
+        
+        // Setup Input System
+        mouse = Mouse.current;
+        keyboard = Keyboard.current;
+        
+        if (mouse == null)
+        {
+            Debug.LogError("MouseInteractionController: No mouse detected!");
+            return;
+        }
+        
+        //Debug.Log("MouseInteractionController: Setup complete! Left-click to grab/drop, Right-click for mouse look");
         
         // Debug: Look specifically for ExitCube
         GameObject exitCube = GameObject.Find("ExitCube");
@@ -76,42 +138,6 @@ public class MouseInteractionController : MonoBehaviour
         {
             //Debug.LogWarning("MouseInteractionController: ExitCube GameObject not found in scene!");
         }
-        
-
-        
-
-    }
-    
-    private void SetupMouseInteraction()
-    {
-        //Debug.Log("MouseInteractionController: Setting up mouse interaction...");
-        
-        // Find XR Origin and camera
-        xrOrigin = FindObjectOfType<XROrigin>();
-        if (xrOrigin == null)
-        {
-            Debug.LogError("MouseInteractionController: No XROrigin found!");
-            return;
-        }
-        
-        playerCamera = xrOrigin.Camera;
-        if (playerCamera == null)
-        {
-            Debug.LogError("MouseInteractionController: No camera found!");
-            return;
-        }
-        
-        // Setup Input System
-        mouse = Mouse.current;
-        keyboard = Keyboard.current;
-        
-        if (mouse == null)
-        {
-            Debug.LogError("MouseInteractionController: No mouse detected!");
-            return;
-        }
-        
-        //Debug.Log("MouseInteractionController: Setup complete! Left-click to grab/drop, Right-click for mouse look");
     }
     
     private void Update()
