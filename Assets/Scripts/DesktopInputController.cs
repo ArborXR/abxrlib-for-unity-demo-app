@@ -8,16 +8,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Provides comprehensive desktop input controls for the Unity editor when VR controllers are not available.
 /// Combines keyboard movement, mouse look, and mouse-based object interaction into a single controller.
-/// Note: This component is disabled on Android builds to avoid conflicts with VR input.
 /// </summary>
-#if UNITY_ANDROID && !UNITY_EDITOR
-// Empty MonoBehaviour for Android builds to maintain component references
-public class DesktopInputController : MonoBehaviour
-{
-    // This class is intentionally empty on Android builds
-    // to prevent desktop input conflicts with VR controllers
-}
-#else
 public class DesktopInputController : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -549,4 +540,3 @@ public class DesktopInputController : MonoBehaviour
         }
     }
 }
-#endif
