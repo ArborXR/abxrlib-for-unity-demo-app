@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.XR.Interaction.Toolkit;
+
 using Random = System.Random;
 
 public class LevelManager : MonoBehaviour
@@ -80,7 +80,7 @@ public class LevelManager : MonoBehaviour
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
 
-        completionData.usedObject.GetComponent<XRGrabInteractable>().colliders.Clear();
+        completionData.usedObject.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>().colliders.Clear();
 
         // Disable the collision box of the usedTarget
         Collider targetCollider = completionData.usedTarget.GetComponent<Collider>();

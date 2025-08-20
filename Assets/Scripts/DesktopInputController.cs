@@ -47,8 +47,8 @@ public class DesktopInputController : MonoBehaviour
     private float currentPitch = 0f;
     
     // Interaction state
-    private XRGrabInteractable currentGrabbedObject;
-    private XRSimpleInteractable currentSimpleInteractable;
+    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
+    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable currentSimpleInteractable;
     private Rigidbody grabbedRigidbody;
     private Vector3 grabOffset;
     private bool isGrabbing = false;
@@ -82,7 +82,7 @@ public class DesktopInputController : MonoBehaviour
         
         // Additional check for XR Display subsystems (newer XR SDK)
         var displaySubsystems = new List<XRDisplaySubsystem>();
-        SubsystemManager.GetInstances(displaySubsystems);
+        SubsystemManager.GetSubsystems(displaySubsystems);
         
         foreach (var display in displaySubsystems)
         {
@@ -169,7 +169,7 @@ public class DesktopInputController : MonoBehaviour
         GameObject exitCube = GameObject.Find("ExitCube");
         if (exitCube != null)
         {
-            XRSimpleInteractable exitInteractable = exitCube.GetComponent<XRSimpleInteractable>();
+            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable exitInteractable = exitCube.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>();
             ExitButton exitButton = exitCube.GetComponent<ExitButton>();
             
             // Only add ExitButton if it doesn't exist and there's no XRSimpleInteractable
@@ -304,9 +304,9 @@ public class DesktopInputController : MonoBehaviour
     private void TryGrabObject()
     {
         // Find all grabbable objects in the scene
-        XRGrabInteractable[] allInteractables = FindObjectsOfType<XRGrabInteractable>();
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         
-        XRGrabInteractable closestInteractable = null;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestInteractable = null;
         float closestDistance = float.MaxValue;
         Vector3 closestHitPoint = Vector3.zero;
         
@@ -335,7 +335,7 @@ public class DesktopInputController : MonoBehaviour
         // Also check for simple interactables (like exit cube)
         if (closestInteractable == null)
         {
-            XRSimpleInteractable[] simpleInteractables = FindObjectsOfType<XRSimpleInteractable>();
+            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>();
             foreach (var simpleInteractable in simpleInteractables)
             {
                 float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
@@ -360,7 +360,7 @@ public class DesktopInputController : MonoBehaviour
         }
     }
     
-    private void GrabObject(XRGrabInteractable interactable, Vector3 hitPoint)
+    private void GrabObject(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable interactable, Vector3 hitPoint)
     {
         currentGrabbedObject = interactable;
         grabbedRigidbody = interactable.GetComponent<Rigidbody>();
@@ -378,7 +378,7 @@ public class DesktopInputController : MonoBehaviour
         }
     }
     
-    private void ActivateSimpleInteractable(XRSimpleInteractable simpleInteractable)
+    private void ActivateSimpleInteractable(UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable simpleInteractable)
     {
         currentSimpleInteractable = simpleInteractable;
         

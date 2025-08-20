@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using UnityEngine.XR.Interaction.Toolkit;
+
 
 //public class GrabbableObject : MonoBehaviour
 //{
@@ -74,7 +74,7 @@ public class GrabbableObjectManager : MonoBehaviour
         TargetLocation[] targetLocations = FindObjectsOfType(typeof(TargetLocation)) as TargetLocation[];
         foreach (TargetLocation targetLocation in targetLocations)
         {
-            obj.GetComponent<XRGrabInteractable>().selectExited.AddListener(interactable => targetLocation.OnRelease());
+            obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>().selectExited.AddListener(interactable => targetLocation.OnRelease());
         }
 
         return obj;

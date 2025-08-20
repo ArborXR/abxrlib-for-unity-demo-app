@@ -1,6 +1,6 @@
 using UnityEngine.XR.Interaction.Toolkit;
 
-public class ReAuthenticateButton : XRBaseInteractable
+public class ReAuthenticateButton : UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable
 {
     protected override void OnSelectEntered(SelectEnterEventArgs args)
     {

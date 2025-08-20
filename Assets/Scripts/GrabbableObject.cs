@@ -6,12 +6,12 @@ public class GrabbableObject : MonoBehaviour
     public GrabbableObjectManager.GrabbableObjectType type;
     public string Id { get; private set; }
 
-    private XRGrabInteractable _grabInteractable;
+    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable _grabInteractable;
 
     private void Awake()
     {
         Id = System.Guid.NewGuid().ToString();
-        _grabInteractable = GetComponent<XRGrabInteractable>();
+        _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         if (_grabInteractable != null)
         {
             _grabInteractable.selectEntered.AddListener(OnGrab);

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
-public class ExitButton : XRBaseInteractable
+public class ExitButton : UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable
 {
     protected override void OnSelectEntered(SelectEnterEventArgs args)
     {
