@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
 using UnityEngine.XR;
@@ -32,8 +34,8 @@ public class DesktopInputController : MonoBehaviour
     private XROrigin xrOrigin;
     private Camera xrCamera;
     private CharacterController characterController;
-    private ActionBasedContinuousMoveProvider moveProvider;
-    private ActionBasedContinuousTurnProvider turnProvider;
+    private ContinuousMoveProvider moveProvider;
+    private ContinuousTurnProvider turnProvider;
     
     // Input System references
     private Keyboard keyboard;
@@ -98,7 +100,7 @@ public class DesktopInputController : MonoBehaviour
     private void SetupComponents()
     {
         // Find XR Origin
-        xrOrigin = FindObjectOfType<XROrigin>();
+        xrOrigin = FindFirstObjectByType<XROrigin>();
         if (xrOrigin == null)
         {
             Debug.LogWarning("DesktopInputController: No XROrigin found in scene");
@@ -136,8 +138,8 @@ public class DesktopInputController : MonoBehaviour
         }
         
         // Get locomotion providers (optional - we'll work without them if needed)
-        moveProvider = xrOrigin.GetComponent<ActionBasedContinuousMoveProvider>();
-        turnProvider = xrOrigin.GetComponent<ActionBasedContinuousTurnProvider>();
+        moveProvider = xrOrigin.GetComponent<ContinuousMoveProvider>();
+        turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
         
         // Disable the original locomotion providers to prevent conflicts
         if (moveProvider != null)
@@ -304,7 +306,7 @@ public class DesktopInputController : MonoBehaviour
     private void TryGrabObject()
     {
         // Find all grabbable objects in the scene
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
         
         UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestInteractable = null;
         float closestDistance = float.MaxValue;
@@ -335,7 +337,7 @@ public class DesktopInputController : MonoBehaviour
         // Also check for simple interactables (like exit cube)
         if (closestInteractable == null)
         {
-            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>();
+            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
             foreach (var simpleInteractable in simpleInteractables)
             {
                 float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);

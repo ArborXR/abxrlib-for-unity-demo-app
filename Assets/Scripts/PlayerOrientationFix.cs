@@ -33,7 +33,7 @@ public class PlayerOrientationFix : MonoBehaviour
         // Find the XR Origin if not already assigned
         if (xrOrigin == null)
         {
-            xrOrigin = FindObjectOfType<XROrigin>();
+            xrOrigin = FindFirstObjectByType<XROrigin>();
         }
 
         if (xrOrigin != null)

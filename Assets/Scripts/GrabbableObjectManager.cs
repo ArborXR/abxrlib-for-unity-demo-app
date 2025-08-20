@@ -71,7 +71,7 @@ public class GrabbableObjectManager : MonoBehaviour
         obj.GetComponent<GrabbableObject>().type = grabbableObjectData.type;
         obj.GetComponent<MeshRenderer>().materials = grabbableObjectData.model.GetComponent<MeshRenderer>().sharedMaterials;
         // Get All Targets
-        TargetLocation[] targetLocations = FindObjectsOfType(typeof(TargetLocation)) as TargetLocation[];
+        TargetLocation[] targetLocations = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
         foreach (TargetLocation targetLocation in targetLocations)
         {
             obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>().selectExited.AddListener(interactable => targetLocation.OnRelease());

@@ -41,7 +41,7 @@ public class LevelManager : MonoBehaviour
 
     private void InitializeGame()
     {
-        _totalTargets = FindObjectsOfType<TargetLocation>().Length;
+        _totalTargets = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None).Length;
         _completedTargets = 0;
         score = 0;
     }
