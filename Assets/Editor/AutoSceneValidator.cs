@@ -135,7 +135,7 @@ public static class AutoSceneValidator
         var scriptLookup = BuildScriptGuidLookup();
         
         // Find all GameObjects with missing script components
-        GameObject[] allObjects = Object.FindObjectsOfType<GameObject>();
+        GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
         
         foreach (GameObject obj in allObjects)
         {
@@ -218,7 +218,7 @@ public static class AutoSceneValidator
     {
         if (!Application.isPlaying && !EditorApplication.isCompiling && !EditorApplication.isUpdating)
         {
-            GameObject[] allObjects = Object.FindObjectsOfType<GameObject>();
+            GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
             int totalCleaned = 0;
             
             foreach (GameObject obj in allObjects)
@@ -380,7 +380,7 @@ public static class AutoSceneValidator
         Debug.Log("AutoSceneValidator: Force cleaning all missing script references...");
         
         // Get all GameObjects in the scene
-        GameObject[] allObjects = Object.FindObjectsOfType<GameObject>();
+        GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
         int totalCleaned = 0;
         
         foreach (GameObject obj in allObjects)
