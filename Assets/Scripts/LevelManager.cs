@@ -14,6 +14,7 @@ public class LevelManager : MonoBehaviour
     public double score;
     private int _totalTargets;
     private int _completedTargets;
+    private const double passingScore = 70;
     private static readonly Random random = new();
 
     private void Start()
@@ -115,14 +116,15 @@ public class LevelManager : MonoBehaviour
     {
         if (_completedTargets >= _totalTargets)
         {
-            if (score > 70)
+            
+            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
+            
+            if (score > passingScore)
             {
-                //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: Abxr.ResultOptions.Pass);
                 PlaySuccessSound();
             }
             else
             {
-                //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: Abxr.ResultOptions.Fail);
                 PlayFailSound();
             }
         }
