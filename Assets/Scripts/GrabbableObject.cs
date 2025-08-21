@@ -21,6 +21,7 @@ public class GrabbableObject : MonoBehaviour
     private void OnGrab(SelectEnterEventArgs args)
     {
         //Abxr.EventInteractionStart($"place_item_{Id}");
+        //Abxr.EventInteractionComplete is called in LevelManager.cs->CompleteTask()
     }
 
     private void OnDestroy()
