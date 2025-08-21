@@ -19,14 +19,25 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
-        //Abxr.LogInfo("Content started (LevelManager)");
         //Abxr.EventAssessmentStart("stocking_training_unit_1");
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
         InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
-        if (random.NextDouble() < 0.5)
+    }
+
+    private void CheckForCompletion()
+    {
+        if (_completedTargets >= _totalTargets)
         {
-            //Abxr.LogError("Bad Life Direction, Description: The job market is bad, but wow you really couldn't find a better job than a shelf stocker in the void? At least rent must be cheap.");
+            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
+            if (score > passingScore)
+            {
+                PlaySuccessSound();
+            }
+            else
+            {
+                PlayFailSound();
+            }
         }
     }
 
@@ -58,6 +69,7 @@ public class LevelManager : MonoBehaviour
 
             completionData.usedTarget.GetComponent<MeshFilter>().sharedMesh = completionData.usedObject.GetComponent<MeshFilter>().sharedMesh;
             string objectId = completionData.usedObject.GetComponent<GrabbableObject>().Id; // Change 'id' to 'Id'
+            // Abxr.EventInteractionStart is called in GrabbableObject.cs
             //Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool,
             //    new Dictionary<string, string>
             //    {
@@ -111,24 +123,6 @@ public class LevelManager : MonoBehaviour
         _completedTargets++;
         CheckForCompletion();
     }
-
-    private void CheckForCompletion()
-    {
-        if (_completedTargets >= _totalTargets)
-        {
-            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
-            
-            if (score > passingScore)
-            {
-                PlaySuccessSound();
-            }
-            else
-            {
-                PlayFailSound();
-            }
-        }
-    }
-
     private void PlaySuccessSound()
     {
         if (victoryAudioSource != null && !victoryAudioSource.isPlaying)
