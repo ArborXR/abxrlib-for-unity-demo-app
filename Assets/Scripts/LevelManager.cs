@@ -116,7 +116,6 @@ public class LevelManager : MonoBehaviour
     {
         if (_completedTargets >= _totalTargets)
         {
-            
             //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
             
             if (score > passingScore)
