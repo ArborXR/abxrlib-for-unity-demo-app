@@ -1,9 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-using Random = System.Random;
 
 public class LevelManager : MonoBehaviour
 {
@@ -15,7 +12,6 @@ public class LevelManager : MonoBehaviour
     private int _totalTargets;
     private int _completedTargets;
     private const double passingScore = 70;
-    private static readonly Random random = new();
 
     private void Start()
     {

@@ -3,12 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-
-//public class GrabbableObject : MonoBehaviour
-//{
-//    public GrabbableObjectManager.GrabbableObjectType type;
-//}
-
 public class GrabbableObjectManager : MonoBehaviour
 {
     public GameObject grabbableObjectPrefab;
@@ -21,8 +15,6 @@ public class GrabbableObjectManager : MonoBehaviour
     {
         public GrabbableObjectType type;
         public GameObject model;
-    //    public Mesh mesh;
-    //    public List<Material> materials;
     }
 
     public enum GrabbableObjectType
