@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-apply from: '../shared/keepUnitySymbols.gradle'
 **APPLY_PLUGINS**
 
 dependencies {
@@ -7,11 +6,9 @@ dependencies {
 **DEPS**}
 
 android {
-    namespace "com.unity3d.player"
-    ndkVersion "**NDKVERSION**"
     ndkPath "**NDKPATH**"
 
-    compileSdk **APIVERSION**
+    compileSdkVersion **APIVERSION**
     buildToolsVersion '**BUILDTOOLS**'
 
     compileOptions {
@@ -20,12 +17,10 @@ android {
     }
 
     defaultConfig {
-**DEFAULT_CONFIG_SETUP**
-        minSdk **MINSDK**
-        targetSdk **TARGETSDK**
+        minSdkVersion **MINSDKVERSION**
+        targetSdkVersion **TARGETSDKVERSION**
         applicationId '**APPLICATIONID**'
         ndk {
-            debugSymbolLevel **DEBUGSYMBOLLEVEL**
             abiFilters **ABIFILTERS**
         }
         versionCode **VERSIONCODE**
@@ -33,30 +28,30 @@ android {
         consumerProguardFiles 'proguard-unity.txt'**USER_PROGUARD**
     }
 
-    lint {
+    lintOptions {
         abortOnError false
     }
 
-    androidResources {
+    aaptOptions {
         noCompress = **BUILTIN_NOCOMPRESS** + unityStreamingAssets.tokenize(', ')
         ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
-    }**PACKAGING**
+    }**PACKAGING_OPTIONS**
     
     buildTypes {
         debug {
             minifyEnabled **MINIFY_DEBUG**
-            
+            useProguard **PROGUARD_DEBUG**
             proguardFiles getDefaultProguardFile('proguard-android.txt')**USER_PROGUARD**
             jniDebuggable true
         }
         release {
             minifyEnabled **MINIFY_RELEASE**
-            
+            useProguard **PROGUARD_RELEASE**
             proguardFiles getDefaultProguardFile('proguard-android.txt')**USER_PROGUARD**
             signingConfig signingConfigs.debug
             proguardFile 'proguard-unity.txt'**USER_PROGUARD**
         }
-    }**PACKAGING**
+    }**PACKAGING_OPTIONS**
     
     bundle {
         language {
