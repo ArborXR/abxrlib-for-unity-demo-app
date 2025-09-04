@@ -101,4 +101,5 @@ crashlytics-build.properties
 #ProjectSettings/ProjectSettings.asset
 Assets/Resources/*.asset
 Assets/Resources/*.meta
+Assets/Resources/PerformanceTestRun*.json
 /.utmp
