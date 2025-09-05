@@ -51,6 +51,7 @@ public class DesktopInputController : MonoBehaviour
     // Interaction state
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable currentSimpleInteractable;
+    private GameObject currentGrabbedGameObject; // For WebGL compatibility
     private Rigidbody grabbedRigidbody;
     private Vector3 grabOffset;
     private bool isGrabbing = false;
@@ -58,7 +59,13 @@ public class DesktopInputController : MonoBehaviour
     private void Start()
     {
         // Enable desktop controls only when VR headset is not active
-        bool shouldEnable = !IsVRHeadsetActive() && enableDesktopControls;
+        bool shouldEnable = enableDesktopControls;
+        
+        // Check VR status (with WebGL safety)
+        if (Application.platform != RuntimePlatform.WebGLPlayer)
+        {
+            shouldEnable = shouldEnable && !IsVRHeadsetActive();
+        }
         
         if (!shouldEnable)
         {
@@ -76,22 +83,36 @@ public class DesktopInputController : MonoBehaviour
     /// </summary>
     private bool IsVRHeadsetActive()
     {
-        // Check if XR is enabled and a device is active
-        if (XRSettings.enabled && XRSettings.isDeviceActive)
+        // Runtime safety check for WebGL
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
         {
-            return true;
+            return false; // No VR support in WebGL
         }
-        
-        // Additional check for XR Display subsystems (newer XR SDK)
-        var displaySubsystems = new List<XRDisplaySubsystem>();
-        SubsystemManager.GetSubsystems(displaySubsystems);
-        
-        foreach (var display in displaySubsystems)
+
+        try
         {
-            if (display.running)
+            // Check if XR is enabled and a device is active
+            if (XRSettings.enabled && XRSettings.isDeviceActive)
             {
                 return true;
             }
+            
+            // Additional check for XR Display subsystems (newer XR SDK)
+            var displaySubsystems = new List<XRDisplaySubsystem>();
+            SubsystemManager.GetSubsystems(displaySubsystems);
+            
+            foreach (var display in displaySubsystems)
+            {
+                if (display.running)
+                {
+                    return true;
+                }
+            }
+        }
+        catch (System.Exception)
+        {
+            // XR systems may not be available - safely return false
+            return false;
         }
         
         return false;
@@ -99,34 +120,72 @@ public class DesktopInputController : MonoBehaviour
     
     private void SetupComponents()
     {
-        // Find XR Origin
-        xrOrigin = FindFirstObjectByType<XROrigin>();
-        if (xrOrigin == null)
+        // Platform-specific component setup
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
         {
-            Debug.LogWarning("DesktopInputController: No XROrigin found in scene");
-            enabled = false;
-            return;
+            // WebGL setup - find camera without XR Origin dependency
+            xrCamera = Camera.main ?? FindFirstObjectByType<Camera>();
+            if (xrCamera == null)
+            {
+                Debug.LogWarning("DesktopInputController: No camera found in WebGL scene");
+                enabled = false;
+                return;
+            }
+            
+            // Look for character controller on camera or parent objects
+            characterController = xrCamera.GetComponent<CharacterController>() ?? xrCamera.GetComponentInParent<CharacterController>();
+            if (characterController == null)
+            {
+                Debug.LogWarning("DesktopInputController: No CharacterController found in WebGL scene");
+                enabled = false;
+                return;
+            }
+        }
+        else
+        {
+            // VR/Desktop setup with XR Origin
+            xrOrigin = FindFirstObjectByType<XROrigin>();
+            if (xrOrigin == null)
+            {
+                Debug.LogWarning("DesktopInputController: No XROrigin found in scene");
+                enabled = false;
+                return;
+            }
+            
+            // Get camera
+            xrCamera = xrOrigin.Camera;
+            if (xrCamera == null)
+            {
+                Debug.LogWarning("DesktopInputController: No camera found on XROrigin");
+                enabled = false;
+                return;
+            }
+            
+            // Get character controller
+            characterController = xrOrigin.GetComponent<CharacterController>();
+            if (characterController == null)
+            {
+                Debug.LogWarning("DesktopInputController: No CharacterController found on XROrigin");
+                enabled = false;
+                return;
+            }
+            
+            // Get locomotion providers (optional - we'll work without them if needed)
+            moveProvider = xrOrigin.GetComponent<ContinuousMoveProvider>();
+            turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
+            
+            // Disable the original locomotion providers to prevent conflicts
+            if (moveProvider != null)
+            {
+                moveProvider.enabled = false;
+            }
+            if (turnProvider != null)
+            {
+                turnProvider.enabled = false;
+            }
         }
         
-        // Get camera
-        xrCamera = xrOrigin.Camera;
-        if (xrCamera == null)
-        {
-            Debug.LogWarning("DesktopInputController: No camera found on XROrigin");
-            enabled = false;
-            return;
-        }
-        
-        // Get character controller
-        characterController = xrOrigin.GetComponent<CharacterController>();
-        if (characterController == null)
-        {
-            Debug.LogWarning("DesktopInputController: No CharacterController found on XROrigin");
-            enabled = false;
-            return;
-        }
-        
-        // Setup Input System
+        // Setup Input System (common for both platforms)
         keyboard = Keyboard.current;
         mouse = Mouse.current;
         
@@ -135,20 +194,6 @@ public class DesktopInputController : MonoBehaviour
             Debug.LogWarning("DesktopInputController: No keyboard detected!");
             enabled = false;
             return;
-        }
-        
-        // Get locomotion providers (optional - we'll work without them if needed)
-        moveProvider = xrOrigin.GetComponent<ContinuousMoveProvider>();
-        turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
-        
-        // Disable the original locomotion providers to prevent conflicts
-        if (moveProvider != null)
-        {
-            moveProvider.enabled = false;
-        }
-        if (turnProvider != null)
-        {
-            turnProvider.enabled = false;
         }
         
         setupComplete = true;
@@ -305,6 +350,13 @@ public class DesktopInputController : MonoBehaviour
     
     private void TryGrabObject()
     {
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            // WebGL: Use GrabbableObject components instead of XR
+            TryGrabObjectWebGL();
+            return;
+        }
+
         // Find all grabbable objects in the scene
         UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
         
@@ -362,6 +414,66 @@ public class DesktopInputController : MonoBehaviour
         }
     }
     
+    private void TryGrabObjectWebGL()
+    {
+        // Find all GrabbableObject components in the scene
+        GrabbableObject[] grabbableObjects = FindObjectsByType<GrabbableObject>(FindObjectsSortMode.None);
+        
+        GameObject closestObject = null;
+        float closestDistance = float.MaxValue;
+        Vector3 closestHitPoint = Vector3.zero;
+        
+        // Find the closest grabbable object within interaction distance
+        foreach (var grabbableObj in grabbableObjects)
+        {
+            // Skip objects that don't have a Rigidbody (can't be grabbed)
+            if (grabbableObj.GetComponent<Rigidbody>() == null) continue;
+            
+            // Calculate distance from camera to object
+            float distance = Vector3.Distance(xrCamera.transform.position, grabbableObj.transform.position);
+            
+            if (distance <= interactionDistance && distance < closestDistance)
+            {
+                // Check if the object is in front of the camera (within a reasonable angle)
+                Vector3 directionToObject = (grabbableObj.transform.position - xrCamera.transform.position).normalized;
+                float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
+                
+                // Only consider objects within a 60-degree cone in front of the camera
+                if (angle <= 60f)
+                {
+                    closestObject = grabbableObj.gameObject;
+                    closestDistance = distance;
+                    closestHitPoint = grabbableObj.transform.position;
+                }
+            }
+        }
+        
+        if (closestObject != null)
+        {
+            GrabObjectWebGL(closestObject, closestHitPoint);
+        }
+    }
+    
+    private void GrabObjectWebGL(GameObject obj, Vector3 hitPoint)
+    {
+        currentGrabbedGameObject = obj;
+        grabbedRigidbody = obj.GetComponent<Rigidbody>();
+        
+        if (grabbedRigidbody != null)
+        {
+            // Calculate offset from hit point to object center
+            grabOffset = obj.transform.position - hitPoint;
+            
+            // Disable gravity while grabbed
+            grabbedRigidbody.useGravity = false;
+            grabbedRigidbody.isKinematic = true;
+            
+            isGrabbing = true;
+            
+            Debug.Log($"WebGL grabbed object: {obj.name}");
+        }
+    }
+    
     private void GrabObject(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable interactable, Vector3 hitPoint)
     {
         currentGrabbedObject = interactable;
@@ -394,7 +506,11 @@ public class DesktopInputController : MonoBehaviour
     
     private void UpdateGrabbedObject()
     {
-        if (!isGrabbing || currentGrabbedObject == null || grabbedRigidbody == null) return;
+        // Check if we're grabbing something (either XR or WebGL)
+        bool hasXRObject = currentGrabbedObject != null;
+        bool hasWebGLObject = currentGrabbedGameObject != null;
+        
+        if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
         // Position the object in front of the camera
         Vector3 targetPosition = xrCamera.transform.position + 
@@ -411,7 +527,11 @@ public class DesktopInputController : MonoBehaviour
     
     private void DropObject()
     {
-        if (!isGrabbing || currentGrabbedObject == null || grabbedRigidbody == null) return;
+        // Check if we're grabbing something (either XR or WebGL)
+        bool hasXRObject = currentGrabbedObject != null;
+        bool hasWebGLObject = currentGrabbedGameObject != null;
+        
+        if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
         // Re-enable physics
         grabbedRigidbody.useGravity = true;
@@ -419,13 +539,20 @@ public class DesktopInputController : MonoBehaviour
         
         // Clear references
         currentGrabbedObject = null;
+        currentGrabbedGameObject = null;
         grabbedRigidbody = null;
         isGrabbing = false;
+        
+        Debug.Log("Dropped object");
     }
     
     private void ThrowObject()
     {
-        if (!isGrabbing || currentGrabbedObject == null || grabbedRigidbody == null) return;
+        // Check if we're grabbing something (either XR or WebGL)
+        bool hasXRObject = currentGrabbedObject != null;
+        bool hasWebGLObject = currentGrabbedGameObject != null;
+        
+        if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
         // Re-enable physics
         grabbedRigidbody.useGravity = true;
@@ -437,8 +564,11 @@ public class DesktopInputController : MonoBehaviour
         
         // Clear references
         currentGrabbedObject = null;
+        currentGrabbedGameObject = null;
         grabbedRigidbody = null;
         isGrabbing = false;
+        
+        Debug.Log("Threw object");
     }
     
     private void MaintainCameraPitch()
@@ -531,14 +661,17 @@ public class DesktopInputController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         
-        // Re-enable locomotion providers if they exist
-        if (moveProvider != null)
+        // Re-enable locomotion providers if they exist (VR/Desktop only)
+        if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            moveProvider.enabled = true;
-        }
-        if (turnProvider != null)
-        {
-            turnProvider.enabled = true;
+            if (moveProvider != null)
+            {
+                moveProvider.enabled = true;
+            }
+            if (turnProvider != null)
+            {
+                turnProvider.enabled = true;
+            }
         }
     }
 }
