@@ -11,10 +11,14 @@ public class GrabbableObject : MonoBehaviour
     private void Awake()
     {
         Id = System.Guid.NewGuid().ToString();
-        _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-        if (_grabInteractable != null)
+        // Runtime safety check for WebGL compatibility
+        if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            _grabInteractable.selectEntered.AddListener(OnGrab);
+            _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (_grabInteractable != null)
+            {
+                _grabInteractable.selectEntered.AddListener(OnGrab);
+            }
         }
     }
 
@@ -26,7 +30,7 @@ public class GrabbableObject : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (_grabInteractable != null)
+        if (Application.platform != RuntimePlatform.WebGLPlayer && _grabInteractable != null)
         {
             _grabInteractable.selectEntered.RemoveListener(OnGrab);
         }
@@ -34,7 +38,7 @@ public class GrabbableObject : MonoBehaviour
 
     private void OnDisable()
     {
-        if (_grabInteractable != null)
+        if (Application.platform != RuntimePlatform.WebGLPlayer && _grabInteractable != null)
         {
             _grabInteractable.selectEntered.RemoveListener(OnGrab);
         }
@@ -42,7 +46,7 @@ public class GrabbableObject : MonoBehaviour
 
     private void OnEnable()
     {
-        if (_grabInteractable != null)
+        if (Application.platform != RuntimePlatform.WebGLPlayer && _grabInteractable != null)
         {
             _grabInteractable.selectEntered.AddListener(OnGrab);
         }

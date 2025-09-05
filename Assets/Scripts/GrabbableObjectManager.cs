@@ -62,11 +62,18 @@ public class GrabbableObjectManager : MonoBehaviour
         obj.GetComponent<MeshCollider>().sharedMesh = grabbableObjectData.model.GetComponent<MeshFilter>().sharedMesh;
         obj.GetComponent<GrabbableObject>().type = grabbableObjectData.type;
         obj.GetComponent<MeshRenderer>().materials = grabbableObjectData.model.GetComponent<MeshRenderer>().sharedMaterials;
-        // Get All Targets
-        TargetLocation[] targetLocations = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
-        foreach (TargetLocation targetLocation in targetLocations)
+        // Get All Targets (runtime safety check for WebGL)
+        if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>().selectExited.AddListener(interactable => targetLocation.OnRelease());
+            TargetLocation[] targetLocations = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
+            foreach (TargetLocation targetLocation in targetLocations)
+            {
+                var xrGrab = obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+                if (xrGrab != null)
+                {
+                    xrGrab.selectExited.AddListener(interactable => targetLocation.OnRelease());
+                }
+            }
         }
 
         return obj;

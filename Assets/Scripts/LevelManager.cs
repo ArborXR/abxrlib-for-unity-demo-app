@@ -89,7 +89,15 @@ public class LevelManager : MonoBehaviour
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
 
-        completionData.usedObject.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>().colliders.Clear();
+        // Clear XR Grab Interactable colliders (runtime safety check for WebGL)
+        if (Application.platform != RuntimePlatform.WebGLPlayer)
+        {
+            var xrGrab = completionData.usedObject.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (xrGrab != null)
+            {
+                xrGrab.colliders.Clear();
+            }
+        }
 
         // Disable the collision box of the usedTarget
         Collider targetCollider = completionData.usedTarget.GetComponent<Collider>();
