@@ -15,17 +15,31 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
+        //Debug.Log("AbxrLib - Assessment Start");
         //Abxr.EventAssessmentStart("stocking_training_unit_1");
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
         InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
+        
+        // Set up authentication completion callback to log module information
+        //Abxr.OnAuthCompleted(OnAuthenticationCompleted);
+        //See OnAuthenticationCompleted below for authentication completion callback
     }
 
     private void CheckForCompletion()
     {
         if (_completedTargets >= _totalTargets)
         {
+            //Without meta data
             //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
+
+            //With meta data
+            // var assessmentMetadata = new Abxr.Dict
+            // {
+            //     ["mode"] = "easy",
+            //     ["touched_floor"] = "true"
+            // };
+            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail, meta: assessmentMetadata);
             if (score > passingScore)
             {
                 PlaySuccessSound();
@@ -66,25 +80,25 @@ public class LevelManager : MonoBehaviour
             completionData.usedTarget.GetComponent<MeshFilter>().sharedMesh = completionData.usedObject.GetComponent<MeshFilter>().sharedMesh;
             string objectId = completionData.usedObject.GetComponent<GrabbableObject>().Id; // Change 'id' to 'Id'
             // Abxr.EventInteractionStart is called in GrabbableObject.cs
-            //Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool,
-            //    new Dictionary<string, string>
-            //    {
-            //        ["placed_fruit"] = completionData.usedType.ToString(),
-            //        ["intended_fruit"] = completionData.targetType.ToString()
-            //    });
-            //Abxr.LogCritical($"Improper placement of {completionData.usedType}");
+            // var placementMetadata = new Abxr.Dict
+            // {
+            //     ["placed_fruit"] = completionData.usedType.ToString(),
+            //     ["intended_fruit"] = completionData.targetType.ToString()
+            // };
+            // Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
+            // Abxr.LogCritical($"Improper placement of {completionData.usedType}");
             StartCoroutine(PlayFailSoundThenRestart());
         }
         else
         {
             string objectId = completionData.usedObject.GetComponent<GrabbableObject>().Id; // Change 'id' to 'Id'
 
-            //Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool,
-            //    new Dictionary<string, string>
-            //    {
-            //        ["placed_fruit"] = completionData.usedType.ToString(),
-            //        ["intended_fruit"] = completionData.targetType.ToString()
-            //    });
+            var placementMetadata = new Abxr.Dict
+            {
+                ["placed_fruit"] = completionData.usedType.ToString(),
+                ["intended_fruit"] = completionData.targetType.ToString()
+            };
+            Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
@@ -170,4 +184,52 @@ public class LevelManager : MonoBehaviour
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
+
+/*
+    private void OnAuthenticationCompleted(Abxr.AuthCompletedData authData)
+    {
+        Debug.Log("=== AUTHENTICATION COMPLETED - MODULE INFORMATION ===");
+        
+        // Get module count from authData instead of deprecated API
+        int totalModuleCount = authData.modules?.Count ?? 0;
+        Debug.Log($"Total Modules Available: {totalModuleCount}");
+        
+        if (totalModuleCount > 0)
+        {
+            Debug.Log("=== CYCLING THROUGH MODULE TARGETS (Developer API) ===");
+            int moduleIndex = 0;
+            
+            // Keep getting the next module target until none are left (returns null)
+            Abxr.CurrentSessionData moduleTarget;
+            while ((moduleTarget = Abxr.GetModuleTarget()) != null)
+            {
+                Debug.Log($"Module [{moduleIndex}]: Target='{moduleTarget.moduleTarget}', UserID='{moduleTarget.userId}', UserEmail='{moduleTarget.userEmail}'");
+                Debug.Log($"  - UserData: {(moduleTarget.userData != null ? "Available" : "None")}");
+                moduleIndex++;
+            }
+            
+            Debug.Log($"Finished cycling through {moduleIndex} modules");
+            
+            // Check if all modules have been consumed
+            if (moduleIndex == totalModuleCount)
+            {
+                Debug.Log("=== ALL MODULES COMPLETED - READY FOR NEXT USER ===");
+                Debug.Log("Application should now exit user back to start and reauthenticate for next user");
+                // TODO: Implement exit to start screen and reauthentication logic
+            }
+        }
+        else
+        {
+            Debug.Log("No module targets available in authentication response");
+        }
+        
+        Debug.Log("=== END MODULE INFORMATION ===");
+    }
+    
+    private void OnDestroy()
+    {
+        // Clean up the authentication callback to avoid memory leaks
+        Abxr.RemoveAuthCompletedCallback(OnAuthenticationCompleted);
+    }
+*/
 }

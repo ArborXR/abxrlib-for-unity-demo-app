@@ -471,6 +471,13 @@ public class DesktopInputController : MonoBehaviour
             isGrabbing = true;
             
             Debug.Log($"WebGL grabbed object: {obj.name}");
+            
+            // Call GrabbableObject's grab event handler for consistency with VR behavior
+            GrabbableObject grabbableComponent = obj.GetComponent<GrabbableObject>();
+            if (grabbableComponent != null)
+            {
+                grabbableComponent.HandleGrabEvent();
+            }
         }
     }
     
@@ -489,6 +496,13 @@ public class DesktopInputController : MonoBehaviour
             grabbedRigidbody.isKinematic = true;
             
             isGrabbing = true;
+            
+            // Call GrabbableObject's grab event handler for consistency with VR behavior
+            GrabbableObject grabbableComponent = interactable.GetComponent<GrabbableObject>();
+            if (grabbableComponent != null)
+            {
+                grabbableComponent.HandleGrabEvent();
+            }
         }
     }
     
