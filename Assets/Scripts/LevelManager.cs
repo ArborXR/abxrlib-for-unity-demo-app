@@ -93,12 +93,12 @@ public class LevelManager : MonoBehaviour
         {
             string objectId = completionData.usedObject.GetComponent<GrabbableObject>().Id; // Change 'id' to 'Id'
 
-            var placementMetadata = new Abxr.Dict
-            {
-                ["placed_fruit"] = completionData.usedType.ToString(),
-                ["intended_fruit"] = completionData.targetType.ToString()
-            };
-            Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
+            // var placementMetadata = new Abxr.Dict
+            // {
+            //     ["placed_fruit"] = completionData.usedType.ToString(),
+            //     ["intended_fruit"] = completionData.targetType.ToString()
+            // };
+            // Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
