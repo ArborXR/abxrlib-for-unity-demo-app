@@ -60,10 +60,30 @@ public class Dropper : MonoBehaviour
         int index = Random.Range(0, uniqueValues.Count);
         GrabbableObjectManager.GrabbableObjectType type = uniqueValues[index];
         Remove(type);
-        // Debug.Log(type);
+        
+        Debug.Log($"Dropper: Attempting to spawn {type}");
         GameObject obj = GrabbableObjectManager.getInstance().CreateGrabbableObject(type, this.transform);
-        obj.GetComponent<Rigidbody>().AddForce(Vector3.down * downForce);
-        obj.GetComponent<Rigidbody>().collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        
+        if (obj != null)
+        {
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.AddForce(Vector3.down * downForce);
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                Debug.Log($"Dropper: Successfully spawned and launched {type}");
+            }
+            else
+            {
+                Debug.LogError($"Dropper: Spawned object {type} missing Rigidbody component!");
+            }
+        }
+        else
+        {
+            Debug.LogError($"Dropper: Failed to create {type} - object was null!");
+            // Add the type back to queue since spawning failed
+            Add(type);
+        }
     }
 
     // Gets rid of A, adds B
