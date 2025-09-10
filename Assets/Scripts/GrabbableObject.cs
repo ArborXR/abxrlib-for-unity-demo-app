@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
@@ -33,7 +34,7 @@ public class GrabbableObject : MonoBehaviour
     public void HandleGrabEvent()
     {
         Debug.Log("AbxrLib - Interaction Start");
-        //Abxr.EventInteractionStart($"place_item_{Id}");
+        Abxr.EventInteractionStart($"place_item_{Id}");
         //Abxr.EventInteractionComplete is called in LevelManager.cs->CompleteTask()
     }
 

@@ -5,6 +5,6 @@ public class ReAuthenticateButton : UnityEngine.XR.Interaction.Toolkit.Interacta
     protected override void OnSelectEntered(SelectEnterEventArgs args)
     {
         base.OnSelectEntered(args);
-        //Abxr.ReAuthenticate();
+        Abxr.ReAuthenticate();
     }
 }

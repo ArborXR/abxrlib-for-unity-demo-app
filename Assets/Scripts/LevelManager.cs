@@ -16,7 +16,7 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         //Debug.Log("AbxrLib - Assessment Start");
-        //Abxr.EventAssessmentStart("stocking_training_unit_1");
+        Abxr.EventAssessmentStart("stocking_training_unit_1");
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
         InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
@@ -34,12 +34,12 @@ public class LevelManager : MonoBehaviour
             //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
 
             //With meta data
-            // var assessmentMetadata = new Abxr.Dict
-            // {
-            //     ["mode"] = "easy",
-            //     ["touched_floor"] = "true"
-            // };
-            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail, meta: assessmentMetadata);
+            var assessmentMetadata = new Abxr.Dict
+            {
+                ["mode"] = "easy",
+                ["touched_floor"] = "true"
+            };
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail, meta: assessmentMetadata);
             if (score > passingScore)
             {
                 PlaySuccessSound();
@@ -53,12 +53,12 @@ public class LevelManager : MonoBehaviour
 
     private void CheckRunTime()
     {
-        //Abxr.LogCritical("AbxrLib - Spending way too much time sorting fruit! This is not that hard a task!");
+        Abxr.LogCritical("AbxrLib - Spending way too much time sorting fruit! This is not that hard a task!");
     }
 
     private void TestCheck()
     {
-        //Abxr.LogError("AbxrLib - Bad Luck, Description: We rolled the dice for fun and found you lost! This is mostly just for testing purposes.");
+        Abxr.LogError("AbxrLib - Bad Luck, Description: We rolled the dice for fun and found you lost! This is mostly just for testing purposes.");
     }
 
     private void InitializeGame()
@@ -70,7 +70,7 @@ public class LevelManager : MonoBehaviour
 
     public void CompleteTask(TargetLocation.CompletionData completionData)
     {
-        //Abxr.LogInfo("Placement Attempted");
+        Abxr.LogInfo("Placement Attempted");
         Debug.Log("AbxrLib - Placement Attempted");
 
         if (completionData.usedType != completionData.targetType)
@@ -80,25 +80,25 @@ public class LevelManager : MonoBehaviour
             completionData.usedTarget.GetComponent<MeshFilter>().sharedMesh = completionData.usedObject.GetComponent<MeshFilter>().sharedMesh;
             string objectId = completionData.usedObject.GetComponent<GrabbableObject>().Id; // Change 'id' to 'Id'
             // Abxr.EventInteractionStart is called in GrabbableObject.cs
-            // var placementMetadata = new Abxr.Dict
-            // {
-            //     ["placed_fruit"] = completionData.usedType.ToString(),
-            //     ["intended_fruit"] = completionData.targetType.ToString()
-            // };
-            // Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
-            // Abxr.LogCritical($"Improper placement of {completionData.usedType}");
+            var placementMetadata = new Abxr.Dict
+            {
+                ["placed_fruit"] = completionData.usedType.ToString(),
+                ["intended_fruit"] = completionData.targetType.ToString()
+            };
+            Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
+            Abxr.LogCritical($"Improper placement of {completionData.usedType}");
             StartCoroutine(PlayFailSoundThenRestart());
         }
         else
         {
             string objectId = completionData.usedObject.GetComponent<GrabbableObject>().Id; // Change 'id' to 'Id'
 
-            // var placementMetadata = new Abxr.Dict
-            // {
-            //     ["placed_fruit"] = completionData.usedType.ToString(),
-            //     ["intended_fruit"] = completionData.targetType.ToString()
-            // };
-            // Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
+            var placementMetadata = new Abxr.Dict
+            {
+                ["placed_fruit"] = completionData.usedType.ToString(),
+                ["intended_fruit"] = completionData.targetType.ToString()
+            };
+            Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
