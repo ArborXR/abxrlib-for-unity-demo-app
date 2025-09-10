@@ -6,7 +6,7 @@ public class GrabbableObject : MonoBehaviour
     public GrabbableObjectManager.GrabbableObjectType type;
     public string Id { get; private set; }
 
-    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable _grabInteractable;
+    private UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable _grabInteractable;
 
     private void Awake()
     {
@@ -14,7 +14,7 @@ public class GrabbableObject : MonoBehaviour
         // Runtime safety check for WebGL compatibility
         if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
             if (_grabInteractable != null)
             {
                 _grabInteractable.selectEntered.AddListener(OnGrab);

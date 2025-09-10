@@ -2268,10 +2268,23 @@ PrefabInstance:
       propertyPath: m_BackGroundColor.r
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3127728407712097246, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+    - {fileID: 5263222900878983396, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+    - {fileID: 3127728408163665757, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+    - {fileID: 3297350933651850364, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+    - {fileID: 2728902658200667494, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+    - {fileID: 6321641679068453239, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+    - {fileID: 7212809983350181570, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7696548424635294048, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 452463683}
+    - targetCorrespondingSourceObject: {fileID: 7696548424635294048, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 452463682}
     - targetCorrespondingSourceObject: {fileID: 9014170783809206332, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 205862587}
@@ -2287,6 +2300,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83e4e6cca11330d4088d729ab4fc9d9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &452463681 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7696548424635294048, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+  m_PrefabInstance: {fileID: 452463679}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &452463682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 452463681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4450ca0bf4077466ebbed106da8a7205, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableDesktopControls: 1
+  moveSpeed: 2
+  turnSpeed: 100
+  mouseSensitivity: 0.5
+  mouseTurnSensitivity: 0.5
+  interactionDistance: 20
+  interactableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  showDebugRay: 1
+  debugRayColor: {r: 1, g: 0, b: 0, a: 1}
+  grabDistance: 2
+  throwForce: 5
+--- !u!114 &452463683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 452463681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26eb48bbc567e4af6bd41e66f9b7b69e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotationOffset: 180
+  applyOnStart: 1
 --- !u!1001 &459290074
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -68,7 +68,7 @@ public class GrabbableObjectManager : MonoBehaviour
             TargetLocation[] targetLocations = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
             foreach (TargetLocation targetLocation in targetLocations)
             {
-                var xrGrab = obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+                var xrGrab = obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
                 if (xrGrab != null)
                 {
                     xrGrab.selectExited.AddListener(interactable => targetLocation.OnRelease());

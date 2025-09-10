@@ -1,7 +1,7 @@
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 
-public class ResetButton : UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable
+public class ResetButton : UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable
 {
     protected override void OnSelectEntered(SelectEnterEventArgs args)
     {

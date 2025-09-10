@@ -1,7 +1,5 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
-using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
 using UnityEngine.XR;
@@ -34,8 +32,8 @@ public class DesktopInputController : MonoBehaviour
     private XROrigin xrOrigin;
     private Camera xrCamera;
     private CharacterController characterController;
-    private ContinuousMoveProvider moveProvider;
-    private ContinuousTurnProvider turnProvider;
+    private ActionBasedContinuousMoveProvider moveProvider;
+    private ActionBasedContinuousTurnProvider turnProvider;
     
     // Input System references
     private Keyboard keyboard;
@@ -49,8 +47,8 @@ public class DesktopInputController : MonoBehaviour
     private float currentPitch = 0f;
     
     // Interaction state
-    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
-    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable currentSimpleInteractable;
+    private UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable currentGrabbedObject;
+    private UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable currentSimpleInteractable;
     private GameObject currentGrabbedGameObject; // For WebGL compatibility
     private Rigidbody grabbedRigidbody;
     private Vector3 grabOffset;
@@ -171,8 +169,8 @@ public class DesktopInputController : MonoBehaviour
             }
             
             // Get locomotion providers (optional - we'll work without them if needed)
-            moveProvider = xrOrigin.GetComponent<ContinuousMoveProvider>();
-            turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
+            moveProvider = xrOrigin.GetComponent<ActionBasedContinuousMoveProvider>();
+            turnProvider = xrOrigin.GetComponent<ActionBasedContinuousTurnProvider>();
             
             // Disable the original locomotion providers to prevent conflicts
             if (moveProvider != null)
@@ -216,7 +214,7 @@ public class DesktopInputController : MonoBehaviour
         GameObject exitCube = GameObject.Find("ExitCube");
         if (exitCube != null)
         {
-            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable exitInteractable = exitCube.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>();
+            UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable exitInteractable = exitCube.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable>();
             ExitButton exitButton = exitCube.GetComponent<ExitButton>();
             
             // Only add ExitButton if it doesn't exist and there's no XRSimpleInteractable
@@ -358,9 +356,9 @@ public class DesktopInputController : MonoBehaviour
         }
 
         // Find all grabbable objects in the scene
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
+        UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable[] allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>(FindObjectsSortMode.None);
         
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestInteractable = null;
+        UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable closestInteractable = null;
         float closestDistance = float.MaxValue;
         Vector3 closestHitPoint = Vector3.zero;
         
@@ -389,7 +387,7 @@ public class DesktopInputController : MonoBehaviour
         // Also check for simple interactables (like exit cube)
         if (closestInteractable == null)
         {
-            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
+            UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable>(FindObjectsSortMode.None);
             foreach (var simpleInteractable in simpleInteractables)
             {
                 float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
@@ -481,7 +479,7 @@ public class DesktopInputController : MonoBehaviour
         }
     }
     
-    private void GrabObject(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable interactable, Vector3 hitPoint)
+    private void GrabObject(UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable interactable, Vector3 hitPoint)
     {
         currentGrabbedObject = interactable;
         grabbedRigidbody = interactable.GetComponent<Rigidbody>();
@@ -506,7 +504,7 @@ public class DesktopInputController : MonoBehaviour
         }
     }
     
-    private void ActivateSimpleInteractable(UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable simpleInteractable)
+    private void ActivateSimpleInteractable(UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable simpleInteractable)
     {
         currentSimpleInteractable = simpleInteractable;
         

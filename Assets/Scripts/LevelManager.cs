@@ -106,7 +106,7 @@ public class LevelManager : MonoBehaviour
         // Clear XR Grab Interactable colliders (runtime safety check for WebGL)
         if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            var xrGrab = completionData.usedObject.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            var xrGrab = completionData.usedObject.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
             if (xrGrab != null)
             {
                 xrGrab.colliders.Clear();
