@@ -16,7 +16,7 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         //Debug.Log("AbxrLib - Assessment Start");
-        Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
+        //Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
         Abxr.EventAssessmentStart("stocking_training_unit_1");
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
