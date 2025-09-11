@@ -36,6 +36,26 @@ public class GrabbableObject : MonoBehaviour
         Debug.Log("AbxrLib - Interaction Start");
         Abxr.EventInteractionStart($"place_item_{Id}");
         //Abxr.EventInteractionComplete is called in LevelManager.cs->CompleteTask()
+
+        // Just for testing
+        Abxr.EventInteractionComplete($"place_item_{Id}", "True", "Correct spot", Abxr.InteractionType.Bool);
+        Debug.Log("AbxrLib - About to send assessment complete");
+        Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.ResultOptions.Pass);
+        Debug.Log("AbxrLib - Assessment complete sent, waiting before exit");
+        
+        // Wait a moment for the assessment to be sent before exiting
+        StartCoroutine(ExitAfterDelay());
+
+    }
+
+    private System.Collections.IEnumerator ExitAfterDelay()
+    {
+        // Wait 2 seconds to allow the assessment event to be sent
+        yield return new WaitForSeconds(2f);
+        
+        Debug.Log("AbxrLib - Exiting application");
+        // Exit the app and return to launcher
+        Application.Quit();
     }
 
     private void OnDestroy()
