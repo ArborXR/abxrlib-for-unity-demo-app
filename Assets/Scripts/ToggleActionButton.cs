@@ -29,12 +29,19 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
     {
         Debug.Log($"ToggleActionButton - {firstActionName}");
         
-        // Add your first action here
-        // Example: Change a GameObject's color, play a sound, trigger an animation, etc.
-        
-        // For demonstration, let's log an Abxr interaction
-        Abxr.EventObjectiveStart("toggle_button_first_action");
-        Abxr.EventObjectiveComplete("toggle_button_first_action", 100, Abxr.EventStatus.Complete);
+        try
+        {
+            // For demonstration, let's log an Abxr interaction
+            Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveStart");
+            Abxr.EventObjectiveStart("toggle_button_first_action");
+            Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveComplete");
+            Abxr.EventObjectiveComplete("toggle_button_first_action", 100, Abxr.EventStatus.Complete);
+            Debug.Log("ToggleActionButton: Successfully completed first action");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"ToggleActionButton: Exception in PerformFirstAction: {ex.Message}\n{ex.StackTrace}");
+        }
     }
     
     private void PerformSecondAction()
@@ -45,7 +52,6 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         Abxr.EventInteractionStart("toggle_button_second_action");
         Abxr.EventInteractionComplete("toggle_button_second_action", "second_action", "Second action completed", Abxr.InteractionType.Text);
 
-        // Just for testing
         Debug.Log("AbxrLib - About to send assessment complete");
         Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.ResultOptions.Pass);
         Debug.Log("AbxrLib - Assessment complete sent, waiting before exit");

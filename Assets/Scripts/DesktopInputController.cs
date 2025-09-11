@@ -249,6 +249,7 @@ public class DesktopInputController : MonoBehaviour
         
         // Ensure camera pitch is maintained even when not in mouse look mode
         MaintainCameraPitch();
+        
     }
     
     private void HandleKeyboardInput()
@@ -478,7 +479,7 @@ public class DesktopInputController : MonoBehaviour
             
             isGrabbing = true;
             
-            Debug.Log($"WebGL grabbed object: {obj.name}");
+            //Debug.Log($"WebGL grabbed object: {obj.name}");
             
             // Call GrabbableObject's grab event handler for consistency with VR behavior
             GrabbableObject grabbableComponent = obj.GetComponent<GrabbableObject>();
@@ -516,42 +517,52 @@ public class DesktopInputController : MonoBehaviour
     
     private void ActivateSimpleInteractable(UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable simpleInteractable)
     {
-        currentSimpleInteractable = simpleInteractable;
-        
-        // Check if the object has our custom script and call it directly if needed
-        var toggleButton = simpleInteractable.GetComponent<ToggleActionButton>();
-        var resetButton = simpleInteractable.GetComponent<ResetButton>();
-        var exitButton = simpleInteractable.GetComponent<ExitButton>();
-        var reAuthButton = simpleInteractable.GetComponent<ReAuthenticateButton>();
-        
-        // Try the standard XR event system first
-        var selectEnterEventArgs = new SelectEnterEventArgs();
-        simpleInteractable.selectEntered.Invoke(selectEnterEventArgs);
-        
-        // Direct method calls as backup (more reliable than reflection)
-        if (toggleButton != null)
+        try
         {
-            toggleButton.TriggerAction();
+            currentSimpleInteractable = simpleInteractable;
+            
+            // Check if the object has our custom script and call it directly if needed
+            var toggleButton = simpleInteractable.GetComponent<ToggleActionButton>();
+            var resetButton = simpleInteractable.GetComponent<ResetButton>();
+            var exitButton = simpleInteractable.GetComponent<ExitButton>();
+            var reAuthButton = simpleInteractable.GetComponent<ReAuthenticateButton>();
+            
+            // Try the standard XR event system first
+            var selectEnterEventArgs = new SelectEnterEventArgs();
+            simpleInteractable.selectEntered.Invoke(selectEnterEventArgs);
+            
+            // Direct method calls as backup (more reliable than reflection)
+            if (toggleButton != null)
+            {
+                Debug.Log("DesktopInputController: About to call ToggleActionButton.TriggerAction()");
+                toggleButton.TriggerAction();
+                Debug.Log("DesktopInputController: Successfully called ToggleActionButton.TriggerAction()");
+            }
+            else if (resetButton != null)
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            }
+            else if (exitButton != null)
+            {
+                #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+                #else
+                Application.Quit();
+                #endif
+            }
+            else if (reAuthButton != null)
+            {
+                Abxr.ReAuthenticate();
+            }
+            
+            // Clear the reference after activation
+            currentSimpleInteractable = null;
         }
-        else if (resetButton != null)
+        catch (System.Exception ex)
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            Debug.LogError($"DesktopInputController: Exception in ActivateSimpleInteractable: {ex.Message}\n{ex.StackTrace}");
+            currentSimpleInteractable = null;
         }
-        else if (exitButton != null)
-        {
-            #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-            #else
-            Application.Quit();
-            #endif
-        }
-        else if (reAuthButton != null)
-        {
-            Abxr.ReAuthenticate();
-        }
-        
-        // Clear the reference after activation
-        currentSimpleInteractable = null;
     }
     
     private void UpdateGrabbedObject()
@@ -593,7 +604,7 @@ public class DesktopInputController : MonoBehaviour
         grabbedRigidbody = null;
         isGrabbing = false;
         
-        Debug.Log("Dropped object");
+        //Debug.Log("Dropped object");
     }
     
     private void ThrowObject()
@@ -618,7 +629,7 @@ public class DesktopInputController : MonoBehaviour
         grabbedRigidbody = null;
         isGrabbing = false;
         
-        Debug.Log("Threw object");
+        //Debug.Log("Threw object");
     }
     
     private void MaintainCameraPitch()
