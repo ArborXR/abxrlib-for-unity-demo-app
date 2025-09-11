@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
 using UnityEngine.XR;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Provides comprehensive desktop input controls for the Unity editor when VR controllers are not available.
@@ -357,15 +358,17 @@ public class DesktopInputController : MonoBehaviour
             return;
         }
 
-        // Find all grabbable objects in the scene
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
-        
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestInteractable = null;
+        // Track closest object of any type
         float closestDistance = float.MaxValue;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestGrabbable = null;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable closestSimple = null;
         Vector3 closestHitPoint = Vector3.zero;
+
+        // Find all grabbable objects in the scene
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allGrabbables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
         
-        // Find the closest grabbable object within interaction distance
-        foreach (var interactable in allInteractables)
+        // Check grabbable objects
+        foreach (var interactable in allGrabbables)
         {
             // Calculate distance from camera to object
             float distance = Vector3.Distance(xrCamera.transform.position, interactable.transform.position);
@@ -379,38 +382,43 @@ public class DesktopInputController : MonoBehaviour
                 // Only consider objects within a 60-degree cone in front of the camera
                 if (angle <= 60f)
                 {
-                    closestInteractable = interactable;
+                    closestGrabbable = interactable;
+                    closestSimple = null; // Clear the other type
                     closestDistance = distance;
                     closestHitPoint = interactable.transform.position;
                 }
             }
         }
         
-        // Also check for simple interactables (like exit cube)
-        if (closestInteractable == null)
+        // Check simple interactables (buttons)
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
+        foreach (var simpleInteractable in simpleInteractables)
         {
-            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
-            foreach (var simpleInteractable in simpleInteractables)
+            float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
+            
+            if (distance <= interactionDistance && distance < closestDistance)
             {
-                float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
-                if (distance <= interactionDistance && distance < closestDistance)
+                Vector3 directionToObject = (simpleInteractable.transform.position - xrCamera.transform.position).normalized;
+                float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
+                
+                if (angle <= 60f)
                 {
-                    Vector3 directionToObject = (simpleInteractable.transform.position - xrCamera.transform.position).normalized;
-                    float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
-                    
-                    if (angle <= 60f)
-                    {
-                        ActivateSimpleInteractable(simpleInteractable);
-                        return;
-                    }
+                    closestSimple = simpleInteractable;
+                    closestGrabbable = null; // Clear the other type
+                    closestDistance = distance;
+                    closestHitPoint = simpleInteractable.transform.position;
                 }
             }
         }
         
-        // Act on the closest interactable found
-        if (closestInteractable != null)
+        // Act on the closest interactable found (regardless of type)
+        if (closestSimple != null)
         {
-            GrabObject(closestInteractable, closestHitPoint);
+            ActivateSimpleInteractable(closestSimple);
+        }
+        else if (closestGrabbable != null)
+        {
+            GrabObject(closestGrabbable, closestHitPoint);
         }
     }
     
@@ -510,9 +518,37 @@ public class DesktopInputController : MonoBehaviour
     {
         currentSimpleInteractable = simpleInteractable;
         
-        // Simulate the interaction by calling the selectEntered event
+        // Check if the object has our custom script and call it directly if needed
+        var toggleButton = simpleInteractable.GetComponent<ToggleActionButton>();
+        var resetButton = simpleInteractable.GetComponent<ResetButton>();
+        var exitButton = simpleInteractable.GetComponent<ExitButton>();
+        var reAuthButton = simpleInteractable.GetComponent<ReAuthenticateButton>();
+        
+        // Try the standard XR event system first
         var selectEnterEventArgs = new SelectEnterEventArgs();
         simpleInteractable.selectEntered.Invoke(selectEnterEventArgs);
+        
+        // Direct method calls as backup (more reliable than reflection)
+        if (toggleButton != null)
+        {
+            toggleButton.TriggerAction();
+        }
+        else if (resetButton != null)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        else if (exitButton != null)
+        {
+            #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+            #else
+            Application.Quit();
+            #endif
+        }
+        else if (reAuthButton != null)
+        {
+            Abxr.ReAuthenticate();
+        }
         
         // Clear the reference after activation
         currentSimpleInteractable = null;
