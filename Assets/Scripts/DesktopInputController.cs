@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
 using UnityEngine.XR;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Provides comprehensive desktop input controls for the Unity editor when VR controllers are not available.
@@ -21,7 +22,7 @@ public class DesktopInputController : MonoBehaviour
     [SerializeField] private float mouseTurnSensitivity = 0.5f;
     
     [Header("Interaction Settings")]
-    [SerializeField] private float interactionDistance = 20f;
+    [SerializeField] private float interactionDistance = 3f;
     [SerializeField] private LayerMask interactableLayers = -1;
     [SerializeField] private bool showDebugRay = true;
     [SerializeField] private Color debugRayColor = Color.red;
@@ -36,6 +37,7 @@ public class DesktopInputController : MonoBehaviour
     private CharacterController characterController;
     private ContinuousMoveProvider moveProvider;
     private ContinuousTurnProvider turnProvider;
+    private UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider teleportProvider;
     
     // Input System references
     private Keyboard keyboard;
@@ -173,6 +175,7 @@ public class DesktopInputController : MonoBehaviour
             // Get locomotion providers (optional - we'll work without them if needed)
             moveProvider = xrOrigin.GetComponent<ContinuousMoveProvider>();
             turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
+            teleportProvider = xrOrigin.GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider>();
             
             // Disable the original locomotion providers to prevent conflicts
             if (moveProvider != null)
@@ -183,6 +186,7 @@ public class DesktopInputController : MonoBehaviour
             {
                 turnProvider.enabled = false;
             }
+            // Note: We intentionally DO NOT disable teleportProvider as it should work in both desktop and VR modes
         }
         
         // Setup Input System (common for both platforms)
@@ -196,6 +200,9 @@ public class DesktopInputController : MonoBehaviour
             return;
         }
         
+        // Force interaction distance to a safe value (overrides any Inspector settings)
+        interactionDistance = 3f;
+        
         setupComplete = true;
         
         // Initialize currentPitch to match the camera's current rotation
@@ -207,7 +214,7 @@ public class DesktopInputController : MonoBehaviour
                 currentPitch -= 360f;
         }
         
-        Debug.Log("DesktopInputController: Setup complete - Desktop controls enabled");
+        Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
     }
     
     private void SetupExitCube()
@@ -248,6 +255,7 @@ public class DesktopInputController : MonoBehaviour
         
         // Ensure camera pitch is maintained even when not in mouse look mode
         MaintainCameraPitch();
+        
     }
     
     private void HandleKeyboardInput()
@@ -301,12 +309,22 @@ public class DesktopInputController : MonoBehaviour
             // Mouse look for turning using new Input System
             Vector2 mouseDelta = mouse.delta.ReadValue();
             float mouseX = mouseDelta.x * mouseTurnSensitivity;
-            turnInput.x += mouseX;
-            
-            // Mouse look for camera pitch (up/down)
             float mouseY = mouseDelta.y * mouseSensitivity;
             
-            // Apply pitch to camera
+            // Apply yaw (left/right) rotation immediately for platform-specific targets
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
+                // In WebGL, apply yaw rotation directly to camera's parent or camera itself
+                Transform rotationTarget = xrCamera.transform.parent ?? xrCamera.transform;
+                rotationTarget.Rotate(0f, mouseX, 0f);
+            }
+            else
+            {
+                // In VR/Desktop, use keyboard turn logic via turnInput
+                turnInput.x += mouseX;
+            }
+            
+            // Apply pitch to camera (same for all platforms)
             if (xrCamera != null)
             {
                 // Update pitch directly without converting from Euler angles
@@ -357,15 +375,17 @@ public class DesktopInputController : MonoBehaviour
             return;
         }
 
-        // Find all grabbable objects in the scene
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
-        
-        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestInteractable = null;
+        // Track closest object of any type
         float closestDistance = float.MaxValue;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable closestGrabbable = null;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable closestSimple = null;
         Vector3 closestHitPoint = Vector3.zero;
+
+        // Find all grabbable objects in the scene
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable[] allGrabbables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
         
-        // Find the closest grabbable object within interaction distance
-        foreach (var interactable in allInteractables)
+        // Check grabbable objects
+        foreach (var interactable in allGrabbables)
         {
             // Calculate distance from camera to object
             float distance = Vector3.Distance(xrCamera.transform.position, interactable.transform.position);
@@ -379,51 +399,59 @@ public class DesktopInputController : MonoBehaviour
                 // Only consider objects within a 60-degree cone in front of the camera
                 if (angle <= 60f)
                 {
-                    closestInteractable = interactable;
+                    closestGrabbable = interactable;
+                    closestSimple = null; // Clear the other type
                     closestDistance = distance;
                     closestHitPoint = interactable.transform.position;
                 }
             }
         }
         
-        // Also check for simple interactables (like exit cube)
-        if (closestInteractable == null)
+        // Check simple interactables (buttons)
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
+        
+        foreach (var simpleInteractable in simpleInteractables)
         {
-            UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
-            foreach (var simpleInteractable in simpleInteractables)
+            float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
+            
+            if (distance <= interactionDistance && distance < closestDistance)
             {
-                float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
-                if (distance <= interactionDistance && distance < closestDistance)
+                Vector3 directionToObject = (simpleInteractable.transform.position - xrCamera.transform.position).normalized;
+                float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
+                
+                if (angle <= 60f)
                 {
-                    Vector3 directionToObject = (simpleInteractable.transform.position - xrCamera.transform.position).normalized;
-                    float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
-                    
-                    if (angle <= 60f)
-                    {
-                        ActivateSimpleInteractable(simpleInteractable);
-                        return;
-                    }
+                    closestSimple = simpleInteractable;
+                    closestGrabbable = null; // Clear the other type
+                    closestDistance = distance;
+                    closestHitPoint = simpleInteractable.transform.position;
                 }
             }
         }
         
-        // Act on the closest interactable found
-        if (closestInteractable != null)
+        // Act on the closest interactable found (regardless of type)
+        if (closestSimple != null)
         {
-            GrabObject(closestInteractable, closestHitPoint);
+            ActivateSimpleInteractable(closestSimple);
+        }
+        else if (closestGrabbable != null)
+        {
+            GrabObject(closestGrabbable, closestHitPoint);
         }
     }
     
     private void TryGrabObjectWebGL()
     {
+        // Track closest object of any type
+        float closestDistance = float.MaxValue;
+        GameObject closestGrabbableObject = null;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable closestSimpleInteractable = null;
+        Vector3 closestHitPoint = Vector3.zero;
+        
         // Find all GrabbableObject components in the scene
         GrabbableObject[] grabbableObjects = FindObjectsByType<GrabbableObject>(FindObjectsSortMode.None);
         
-        GameObject closestObject = null;
-        float closestDistance = float.MaxValue;
-        Vector3 closestHitPoint = Vector3.zero;
-        
-        // Find the closest grabbable object within interaction distance
+        // Check grabbable objects (fruit)
         foreach (var grabbableObj in grabbableObjects)
         {
             // Skip objects that don't have a Rigidbody (can't be grabbed)
@@ -441,16 +469,44 @@ public class DesktopInputController : MonoBehaviour
                 // Only consider objects within a 60-degree cone in front of the camera
                 if (angle <= 60f)
                 {
-                    closestObject = grabbableObj.gameObject;
+                    closestGrabbableObject = grabbableObj.gameObject;
+                    closestSimpleInteractable = null; // Clear the other type
                     closestDistance = distance;
                     closestHitPoint = grabbableObj.transform.position;
                 }
             }
         }
         
-        if (closestObject != null)
+        // Check simple interactables (blocks/buttons) - same as regular version
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
+        
+        foreach (var simpleInteractable in simpleInteractables)
         {
-            GrabObjectWebGL(closestObject, closestHitPoint);
+            float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
+            
+            if (distance <= interactionDistance && distance < closestDistance)
+            {
+                Vector3 directionToObject = (simpleInteractable.transform.position - xrCamera.transform.position).normalized;
+                float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
+                
+                if (angle <= 60f)
+                {
+                    closestSimpleInteractable = simpleInteractable;
+                    closestGrabbableObject = null; // Clear the other type
+                    closestDistance = distance;
+                    closestHitPoint = simpleInteractable.transform.position;
+                }
+            }
+        }
+        
+        // Act on the closest interactable found
+        if (closestSimpleInteractable != null)
+        {
+            ActivateSimpleInteractable(closestSimpleInteractable);
+        }
+        else if (closestGrabbableObject != null)
+        {
+            GrabObjectWebGL(closestGrabbableObject, closestHitPoint);
         }
     }
     
@@ -470,7 +526,14 @@ public class DesktopInputController : MonoBehaviour
             
             isGrabbing = true;
             
-            Debug.Log($"WebGL grabbed object: {obj.name}");
+            //Debug.Log($"WebGL grabbed object: {obj.name}");
+            
+            // Call GrabbableObject's grab event handler for consistency with VR behavior
+            GrabbableObject grabbableComponent = obj.GetComponent<GrabbableObject>();
+            if (grabbableComponent != null)
+            {
+                grabbableComponent.HandleGrabEvent();
+            }
         }
     }
     
@@ -489,19 +552,68 @@ public class DesktopInputController : MonoBehaviour
             grabbedRigidbody.isKinematic = true;
             
             isGrabbing = true;
+            
+            // Call GrabbableObject's grab event handler for consistency with VR behavior
+            GrabbableObject grabbableComponent = interactable.GetComponent<GrabbableObject>();
+            if (grabbableComponent != null)
+            {
+                grabbableComponent.HandleGrabEvent();
+            }
         }
     }
     
     private void ActivateSimpleInteractable(UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable simpleInteractable)
     {
-        currentSimpleInteractable = simpleInteractable;
-        
-        // Simulate the interaction by calling the selectEntered event
-        var selectEnterEventArgs = new SelectEnterEventArgs();
-        simpleInteractable.selectEntered.Invoke(selectEnterEventArgs);
-        
-        // Clear the reference after activation
-        currentSimpleInteractable = null;
+        try
+        {
+            currentSimpleInteractable = simpleInteractable;
+            
+            // Check if the object has our custom script and call it directly if needed
+            var toggleButton = simpleInteractable.GetComponent<ToggleActionButton>();
+            var resetButton = simpleInteractable.GetComponent<ResetButton>();
+            var exitButton = simpleInteractable.GetComponent<ExitButton>();
+            var reAuthButton = simpleInteractable.GetComponent<ReAuthenticateButton>();
+            
+            // Try the standard XR event system first
+            var selectEnterEventArgs = new SelectEnterEventArgs();
+            simpleInteractable.selectEntered.Invoke(selectEnterEventArgs);
+            
+            // Direct method calls as backup (more reliable than reflection)
+            if (toggleButton != null)
+            {
+                Debug.Log("DesktopInputController: About to call ToggleActionButton.TriggerAction()");
+                toggleButton.TriggerAction();
+                Debug.Log("DesktopInputController: Successfully called ToggleActionButton.TriggerAction()");
+            }
+            else if (resetButton != null)
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            }
+            else if (exitButton != null)
+            {
+                #if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+                #else
+                Application.Quit();
+                #endif
+            }
+            else if (reAuthButton != null)
+            {
+                Abxr.ReAuthenticate();
+            }
+            
+            // Fire selectExited immediately after activation to complete the interaction lifecycle
+            var selectExitEventArgs = new SelectExitEventArgs();
+            simpleInteractable.selectExited.Invoke(selectExitEventArgs);
+            
+            // Clear the reference after activation
+            currentSimpleInteractable = null;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"DesktopInputController: Exception in ActivateSimpleInteractable: {ex.Message}\n{ex.StackTrace}");
+            currentSimpleInteractable = null;
+        }
     }
     
     private void UpdateGrabbedObject()
@@ -533,6 +645,18 @@ public class DesktopInputController : MonoBehaviour
         
         if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
+        // Fire selectExited event for XR interactables to properly complete the interaction lifecycle
+        if (hasXRObject && currentGrabbedObject != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentGrabbedObject.selectExited.Invoke(selectExitEventArgs);
+        }
+        else if (currentSimpleInteractable != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentSimpleInteractable.selectExited.Invoke(selectExitEventArgs);
+        }
+        
         // Re-enable physics
         grabbedRigidbody.useGravity = true;
         grabbedRigidbody.isKinematic = false;
@@ -540,10 +664,11 @@ public class DesktopInputController : MonoBehaviour
         // Clear references
         currentGrabbedObject = null;
         currentGrabbedGameObject = null;
+        currentSimpleInteractable = null;
         grabbedRigidbody = null;
         isGrabbing = false;
         
-        Debug.Log("Dropped object");
+        //Debug.Log("Dropped object");
     }
     
     private void ThrowObject()
@@ -553,6 +678,18 @@ public class DesktopInputController : MonoBehaviour
         bool hasWebGLObject = currentGrabbedGameObject != null;
         
         if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
+        
+        // Fire selectExited event for XR interactables to properly complete the interaction lifecycle
+        if (hasXRObject && currentGrabbedObject != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentGrabbedObject.selectExited.Invoke(selectExitEventArgs);
+        }
+        else if (currentSimpleInteractable != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentSimpleInteractable.selectExited.Invoke(selectExitEventArgs);
+        }
         
         // Re-enable physics
         grabbedRigidbody.useGravity = true;
@@ -565,10 +702,11 @@ public class DesktopInputController : MonoBehaviour
         // Clear references
         currentGrabbedObject = null;
         currentGrabbedGameObject = null;
+        currentSimpleInteractable = null;
         grabbedRigidbody = null;
         isGrabbing = false;
         
-        Debug.Log("Threw object");
+        //Debug.Log("Threw object");
     }
     
     private void MaintainCameraPitch()
@@ -611,7 +749,17 @@ public class DesktopInputController : MonoBehaviour
         // Apply turning
         if (Mathf.Abs(turnInput.x) > 0.1f)
         {
-            xrOrigin.transform.Rotate(0f, turnInput.x * turnSpeed * Time.deltaTime, 0f);
+            // WebGL uses camera or its parent for rotation, VR/Desktop uses XROrigin
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
+                // In WebGL, rotate the camera's parent if it exists, otherwise the camera itself
+                Transform rotationTarget = xrCamera.transform.parent ?? xrCamera.transform;
+                rotationTarget.Rotate(0f, turnInput.x * turnSpeed * Time.deltaTime, 0f);
+            }
+            else if (xrOrigin != null)
+            {
+                xrOrigin.transform.Rotate(0f, turnInput.x * turnSpeed * Time.deltaTime, 0f);
+            }
         }
     }
     
@@ -672,6 +820,7 @@ public class DesktopInputController : MonoBehaviour
             {
                 turnProvider.enabled = true;
             }
+            // Note: We intentionally DO NOT re-enable teleportProvider here as it should remain active for VR
         }
     }
 }

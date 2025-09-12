@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
@@ -24,7 +25,16 @@ public class GrabbableObject : MonoBehaviour
 
     private void OnGrab(SelectEnterEventArgs args)
     {
-        //Abxr.EventInteractionStart($"place_item_{Id}");
+        HandleGrabEvent();
+    }
+
+    /// <summary>
+    /// Public method to handle grab events - can be called from both VR and desktop input systems
+    /// </summary>
+    public void HandleGrabEvent()
+    {
+        Debug.Log("AbxrLib - Interaction Start");
+        Abxr.EventInteractionStart($"place_item_{Id}");
         //Abxr.EventInteractionComplete is called in LevelManager.cs->CompleteTask()
     }
 
