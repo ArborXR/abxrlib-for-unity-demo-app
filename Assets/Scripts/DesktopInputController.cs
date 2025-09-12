@@ -309,12 +309,22 @@ public class DesktopInputController : MonoBehaviour
             // Mouse look for turning using new Input System
             Vector2 mouseDelta = mouse.delta.ReadValue();
             float mouseX = mouseDelta.x * mouseTurnSensitivity;
-            turnInput.x += mouseX;
-            
-            // Mouse look for camera pitch (up/down)
             float mouseY = mouseDelta.y * mouseSensitivity;
             
-            // Apply pitch to camera
+            // Apply yaw (left/right) rotation immediately for platform-specific targets
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
+                // In WebGL, apply yaw rotation directly to camera's parent or camera itself
+                Transform rotationTarget = xrCamera.transform.parent ?? xrCamera.transform;
+                rotationTarget.Rotate(0f, mouseX, 0f);
+            }
+            else
+            {
+                // In VR/Desktop, use keyboard turn logic via turnInput
+                turnInput.x += mouseX;
+            }
+            
+            // Apply pitch to camera (same for all platforms)
             if (xrCamera != null)
             {
                 // Update pitch directly without converting from Euler angles
@@ -432,14 +442,16 @@ public class DesktopInputController : MonoBehaviour
     
     private void TryGrabObjectWebGL()
     {
+        // Track closest object of any type
+        float closestDistance = float.MaxValue;
+        GameObject closestGrabbableObject = null;
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable closestSimpleInteractable = null;
+        Vector3 closestHitPoint = Vector3.zero;
+        
         // Find all GrabbableObject components in the scene
         GrabbableObject[] grabbableObjects = FindObjectsByType<GrabbableObject>(FindObjectsSortMode.None);
         
-        GameObject closestObject = null;
-        float closestDistance = float.MaxValue;
-        Vector3 closestHitPoint = Vector3.zero;
-        
-        // Find the closest grabbable object within interaction distance
+        // Check grabbable objects (fruit)
         foreach (var grabbableObj in grabbableObjects)
         {
             // Skip objects that don't have a Rigidbody (can't be grabbed)
@@ -457,16 +469,44 @@ public class DesktopInputController : MonoBehaviour
                 // Only consider objects within a 60-degree cone in front of the camera
                 if (angle <= 60f)
                 {
-                    closestObject = grabbableObj.gameObject;
+                    closestGrabbableObject = grabbableObj.gameObject;
+                    closestSimpleInteractable = null; // Clear the other type
                     closestDistance = distance;
                     closestHitPoint = grabbableObj.transform.position;
                 }
             }
         }
         
-        if (closestObject != null)
+        // Check simple interactables (blocks/buttons) - same as regular version
+        UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
+        
+        foreach (var simpleInteractable in simpleInteractables)
         {
-            GrabObjectWebGL(closestObject, closestHitPoint);
+            float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
+            
+            if (distance <= interactionDistance && distance < closestDistance)
+            {
+                Vector3 directionToObject = (simpleInteractable.transform.position - xrCamera.transform.position).normalized;
+                float angle = Vector3.Angle(xrCamera.transform.forward, directionToObject);
+                
+                if (angle <= 60f)
+                {
+                    closestSimpleInteractable = simpleInteractable;
+                    closestGrabbableObject = null; // Clear the other type
+                    closestDistance = distance;
+                    closestHitPoint = simpleInteractable.transform.position;
+                }
+            }
+        }
+        
+        // Act on the closest interactable found
+        if (closestSimpleInteractable != null)
+        {
+            ActivateSimpleInteractable(closestSimpleInteractable);
+        }
+        else if (closestGrabbableObject != null)
+        {
+            GrabObjectWebGL(closestGrabbableObject, closestHitPoint);
         }
     }
     
@@ -709,7 +749,17 @@ public class DesktopInputController : MonoBehaviour
         // Apply turning
         if (Mathf.Abs(turnInput.x) > 0.1f)
         {
-            xrOrigin.transform.Rotate(0f, turnInput.x * turnSpeed * Time.deltaTime, 0f);
+            // WebGL uses camera or its parent for rotation, VR/Desktop uses XROrigin
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
+                // In WebGL, rotate the camera's parent if it exists, otherwise the camera itself
+                Transform rotationTarget = xrCamera.transform.parent ?? xrCamera.transform;
+                rotationTarget.Rotate(0f, turnInput.x * turnSpeed * Time.deltaTime, 0f);
+            }
+            else if (xrOrigin != null)
+            {
+                xrOrigin.transform.Rotate(0f, turnInput.x * turnSpeed * Time.deltaTime, 0f);
+            }
         }
     }
     
