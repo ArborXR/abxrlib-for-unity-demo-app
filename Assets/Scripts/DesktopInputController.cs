@@ -22,7 +22,7 @@ public class DesktopInputController : MonoBehaviour
     [SerializeField] private float mouseTurnSensitivity = 0.5f;
     
     [Header("Interaction Settings")]
-    [SerializeField] private float interactionDistance = 20f;
+    [SerializeField] private float interactionDistance = 3f;
     [SerializeField] private LayerMask interactableLayers = -1;
     [SerializeField] private bool showDebugRay = true;
     [SerializeField] private Color debugRayColor = Color.red;
@@ -37,6 +37,7 @@ public class DesktopInputController : MonoBehaviour
     private CharacterController characterController;
     private ContinuousMoveProvider moveProvider;
     private ContinuousTurnProvider turnProvider;
+    private UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider teleportProvider;
     
     // Input System references
     private Keyboard keyboard;
@@ -174,6 +175,7 @@ public class DesktopInputController : MonoBehaviour
             // Get locomotion providers (optional - we'll work without them if needed)
             moveProvider = xrOrigin.GetComponent<ContinuousMoveProvider>();
             turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
+            teleportProvider = xrOrigin.GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider>();
             
             // Disable the original locomotion providers to prevent conflicts
             if (moveProvider != null)
@@ -184,6 +186,7 @@ public class DesktopInputController : MonoBehaviour
             {
                 turnProvider.enabled = false;
             }
+            // Note: We intentionally DO NOT disable teleportProvider as it should work in both desktop and VR modes
         }
         
         // Setup Input System (common for both platforms)
@@ -197,6 +200,9 @@ public class DesktopInputController : MonoBehaviour
             return;
         }
         
+        // Force interaction distance to a safe value (overrides any Inspector settings)
+        interactionDistance = 3f;
+        
         setupComplete = true;
         
         // Initialize currentPitch to match the camera's current rotation
@@ -208,7 +214,7 @@ public class DesktopInputController : MonoBehaviour
                 currentPitch -= 360f;
         }
         
-        Debug.Log("DesktopInputController: Setup complete - Desktop controls enabled");
+        Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
     }
     
     private void SetupExitCube()
@@ -393,6 +399,7 @@ public class DesktopInputController : MonoBehaviour
         
         // Check simple interactables (buttons)
         UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable[] simpleInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>(FindObjectsSortMode.None);
+        
         foreach (var simpleInteractable in simpleInteractables)
         {
             float distance = Vector3.Distance(xrCamera.transform.position, simpleInteractable.transform.position);
@@ -555,6 +562,10 @@ public class DesktopInputController : MonoBehaviour
                 Abxr.ReAuthenticate();
             }
             
+            // Fire selectExited immediately after activation to complete the interaction lifecycle
+            var selectExitEventArgs = new SelectExitEventArgs();
+            simpleInteractable.selectExited.Invoke(selectExitEventArgs);
+            
             // Clear the reference after activation
             currentSimpleInteractable = null;
         }
@@ -594,6 +605,18 @@ public class DesktopInputController : MonoBehaviour
         
         if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
+        // Fire selectExited event for XR interactables to properly complete the interaction lifecycle
+        if (hasXRObject && currentGrabbedObject != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentGrabbedObject.selectExited.Invoke(selectExitEventArgs);
+        }
+        else if (currentSimpleInteractable != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentSimpleInteractable.selectExited.Invoke(selectExitEventArgs);
+        }
+        
         // Re-enable physics
         grabbedRigidbody.useGravity = true;
         grabbedRigidbody.isKinematic = false;
@@ -601,6 +624,7 @@ public class DesktopInputController : MonoBehaviour
         // Clear references
         currentGrabbedObject = null;
         currentGrabbedGameObject = null;
+        currentSimpleInteractable = null;
         grabbedRigidbody = null;
         isGrabbing = false;
         
@@ -615,6 +639,18 @@ public class DesktopInputController : MonoBehaviour
         
         if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
+        // Fire selectExited event for XR interactables to properly complete the interaction lifecycle
+        if (hasXRObject && currentGrabbedObject != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentGrabbedObject.selectExited.Invoke(selectExitEventArgs);
+        }
+        else if (currentSimpleInteractable != null)
+        {
+            var selectExitEventArgs = new SelectExitEventArgs();
+            currentSimpleInteractable.selectExited.Invoke(selectExitEventArgs);
+        }
+        
         // Re-enable physics
         grabbedRigidbody.useGravity = true;
         grabbedRigidbody.isKinematic = false;
@@ -626,6 +662,7 @@ public class DesktopInputController : MonoBehaviour
         // Clear references
         currentGrabbedObject = null;
         currentGrabbedGameObject = null;
+        currentSimpleInteractable = null;
         grabbedRigidbody = null;
         isGrabbing = false;
         
@@ -733,6 +770,7 @@ public class DesktopInputController : MonoBehaviour
             {
                 turnProvider.enabled = true;
             }
+            // Note: We intentionally DO NOT re-enable teleportProvider here as it should remain active for VR
         }
     }
 }
