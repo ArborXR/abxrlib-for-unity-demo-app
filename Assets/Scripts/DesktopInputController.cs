@@ -52,7 +52,8 @@ public class DesktopInputController : MonoBehaviour
     
     // Locomotion control state
     private float lastLocomotionDisableTime = 0f;
-    private const float LOCOMOTION_DISABLE_INTERVAL = 1f; // Check every second
+    private const float LOCOMOTION_DISABLE_INTERVAL = 5f; // Check every 5 seconds (less frequent now that it's working)
+    private bool hasLoggedInitialDisable = false;
     
     // Interaction state
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
@@ -249,35 +250,40 @@ public class DesktopInputController : MonoBehaviour
     {
         try
         {
-            Debug.Log("[DesktopInputController] DisableAllLocomotionProviders() called");
+            int disabledCount = 0;
             
-            // Disable ContinuousMoveProvider components (the main culprit)
+            // Disable ContinuousMoveProvider components
             var allMoveProviders = FindObjectsOfType<ContinuousMoveProvider>();
-            Debug.Log($"[DesktopInputController] Found {allMoveProviders.Length} ContinuousMoveProvider components");
             foreach (var provider in allMoveProviders)
             {
                 if (provider.enabled)
                 {
                     provider.enabled = false;
-                    Debug.Log($"[DesktopInputController] Disabled ContinuousMoveProvider on {provider.gameObject.name}");
+                    disabledCount++;
+                    if (!hasLoggedInitialDisable)
+                    {
+                        Debug.Log($"[DesktopInputController] Disabled ContinuousMoveProvider on {provider.gameObject.name}");
+                    }
                 }
             }
             
             // Disable ContinuousTurnProvider components
             var allTurnProviders = FindObjectsOfType<ContinuousTurnProvider>();
-            Debug.Log($"[DesktopInputController] Found {allTurnProviders.Length} ContinuousTurnProvider components");
             foreach (var provider in allTurnProviders)
             {
                 if (provider.enabled)
                 {
                     provider.enabled = false;
-                    Debug.Log($"[DesktopInputController] Disabled ContinuousTurnProvider on {provider.gameObject.name}");
+                    disabledCount++;
+                    if (!hasLoggedInitialDisable)
+                    {
+                        Debug.Log($"[DesktopInputController] Disabled ContinuousTurnProvider on {provider.gameObject.name}");
+                    }
                 }
             }
             
-            // Also try to find and disable any other locomotion providers using the base class
+            // Disable other locomotion providers using the base class
             var allLocomotionProviders = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>();
-            Debug.Log($"[DesktopInputController] Found {allLocomotionProviders.Length} generic LocomotionProvider components");
             foreach (var provider in allLocomotionProviders)
             {
                 // Skip teleportation providers as they should work in desktop mode
@@ -289,11 +295,20 @@ public class DesktopInputController : MonoBehaviour
                 if (provider.enabled)
                 {
                     provider.enabled = false;
-                    Debug.Log($"[DesktopInputController] Disabled generic LocomotionProvider ({provider.GetType().Name}) on {provider.gameObject.name}");
+                    disabledCount++;
+                    if (!hasLoggedInitialDisable)
+                    {
+                        Debug.Log($"[DesktopInputController] Disabled {provider.GetType().Name} on {provider.gameObject.name}");
+                    }
                 }
             }
             
-            Debug.Log("[DesktopInputController] DisableAllLocomotionProviders() completed");
+            // Log summary on first run or if we disabled anything
+            if (!hasLoggedInitialDisable || disabledCount > 0)
+            {
+                Debug.Log($"[DesktopInputController] Locomotion provider check complete - disabled {disabledCount} components");
+                hasLoggedInitialDisable = true;
+            }
         }
         catch (System.Exception ex)
         {
