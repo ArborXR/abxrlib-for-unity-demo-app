@@ -50,6 +50,10 @@ public class DesktopInputController : MonoBehaviour
     private bool setupComplete = false;
     private float currentPitch = 0f;
     
+    // Locomotion control state
+    private float lastLocomotionDisableTime = 0f;
+    private const float LOCOMOTION_DISABLE_INTERVAL = 1f; // Check every second
+    
     // Interaction state
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable currentSimpleInteractable;
@@ -177,16 +181,7 @@ public class DesktopInputController : MonoBehaviour
             turnProvider = xrOrigin.GetComponent<ContinuousTurnProvider>();
             teleportProvider = xrOrigin.GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider>();
             
-            // Disable the original locomotion providers to prevent conflicts
-            if (moveProvider != null)
-            {
-                moveProvider.enabled = false;
-            }
-            if (turnProvider != null)
-            {
-                turnProvider.enabled = false;
-            }
-            // Note: We intentionally DO NOT disable teleportProvider as it should work in both desktop and VR modes
+            // Note: Locomotion provider disabling is now handled by DisableAllLocomotionProviders() method
         }
         
         // Setup Input System (common for both platforms)
@@ -215,6 +210,9 @@ public class DesktopInputController : MonoBehaviour
         }
         
         Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
+        
+        // Do initial locomotion disable
+        DisableAllLocomotionProviders();
     }
     
     private void SetupExitCube()
@@ -243,6 +241,66 @@ public class DesktopInputController : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Aggressively disable all locomotion providers in the scene to prevent null reference exceptions.
+    /// This runs continuously to catch any providers that might be enabled later.
+    /// </summary>
+    private void DisableAllLocomotionProviders()
+    {
+        try
+        {
+            Debug.Log("[DesktopInputController] DisableAllLocomotionProviders() called");
+            
+            // Disable ContinuousMoveProvider components (the main culprit)
+            var allMoveProviders = FindObjectsOfType<ContinuousMoveProvider>();
+            Debug.Log($"[DesktopInputController] Found {allMoveProviders.Length} ContinuousMoveProvider components");
+            foreach (var provider in allMoveProviders)
+            {
+                if (provider.enabled)
+                {
+                    provider.enabled = false;
+                    Debug.Log($"[DesktopInputController] Disabled ContinuousMoveProvider on {provider.gameObject.name}");
+                }
+            }
+            
+            // Disable ContinuousTurnProvider components
+            var allTurnProviders = FindObjectsOfType<ContinuousTurnProvider>();
+            Debug.Log($"[DesktopInputController] Found {allTurnProviders.Length} ContinuousTurnProvider components");
+            foreach (var provider in allTurnProviders)
+            {
+                if (provider.enabled)
+                {
+                    provider.enabled = false;
+                    Debug.Log($"[DesktopInputController] Disabled ContinuousTurnProvider on {provider.gameObject.name}");
+                }
+            }
+            
+            // Also try to find and disable any other locomotion providers using the base class
+            var allLocomotionProviders = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>();
+            Debug.Log($"[DesktopInputController] Found {allLocomotionProviders.Length} generic LocomotionProvider components");
+            foreach (var provider in allLocomotionProviders)
+            {
+                // Skip teleportation providers as they should work in desktop mode
+                if (provider is UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider)
+                {
+                    continue;
+                }
+                
+                if (provider.enabled)
+                {
+                    provider.enabled = false;
+                    Debug.Log($"[DesktopInputController] Disabled generic LocomotionProvider ({provider.GetType().Name}) on {provider.gameObject.name}");
+                }
+            }
+            
+            Debug.Log("[DesktopInputController] DisableAllLocomotionProviders() completed");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[DesktopInputController] Exception in DisableAllLocomotionProviders: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+    
     private void Update()
     {
         if (!enabled || !setupComplete) return;
@@ -252,6 +310,13 @@ public class DesktopInputController : MonoBehaviour
         HandleMouseInteraction();
         ApplyMovement();
         UpdateGrabbedObject();
+        
+        // Continuously disable locomotion providers to prevent null reference exceptions
+        if (Time.time - lastLocomotionDisableTime >= LOCOMOTION_DISABLE_INTERVAL)
+        {
+            DisableAllLocomotionProviders();
+            lastLocomotionDisableTime = Time.time;
+        }
         
         // Ensure camera pitch is maintained even when not in mouse look mode
         MaintainCameraPitch();
@@ -809,18 +874,45 @@ public class DesktopInputController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         
-        // Re-enable locomotion providers if they exist (VR/Desktop only)
+        // Re-enable ALL locomotion providers that we disabled (VR/Desktop only)
         if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            if (moveProvider != null)
+            try
             {
-                moveProvider.enabled = true;
+                Debug.Log("[DesktopInputController] Re-enabling locomotion providers on destroy");
+                
+                var allMoveProviders = FindObjectsOfType<ContinuousMoveProvider>();
+                foreach (var provider in allMoveProviders)
+                {
+                    provider.enabled = true;
+                    Debug.Log($"[DesktopInputController] Re-enabled ContinuousMoveProvider on {provider.gameObject.name}");
+                }
+                
+                var allTurnProviders = FindObjectsOfType<ContinuousTurnProvider>();
+                foreach (var provider in allTurnProviders)
+                {
+                    provider.enabled = true;
+                    Debug.Log($"[DesktopInputController] Re-enabled ContinuousTurnProvider on {provider.gameObject.name}");
+                }
+                
+                // Re-enable other locomotion providers (except teleportation)
+                var allLocomotionProviders = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>();
+                foreach (var provider in allLocomotionProviders)
+                {
+                    // Skip teleportation providers as they should remain enabled
+                    if (provider is UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation.TeleportationProvider)
+                    {
+                        continue;
+                    }
+                    
+                    provider.enabled = true;
+                    Debug.Log($"[DesktopInputController] Re-enabled generic LocomotionProvider ({provider.GetType().Name}) on {provider.gameObject.name}");
+                }
             }
-            if (turnProvider != null)
+            catch (System.Exception ex)
             {
-                turnProvider.enabled = true;
+                Debug.LogError($"[DesktopInputController] Exception in OnDestroy re-enable: {ex.Message}");
             }
-            // Note: We intentionally DO NOT re-enable teleportProvider here as it should remain active for VR
         }
     }
 }
