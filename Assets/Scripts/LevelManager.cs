@@ -210,10 +210,10 @@ public class LevelManager : MonoBehaviour
         Debug.Log($"User - ID: {authData.UserData["id"]}");
         Debug.Log($"User - Name: {authData.UserData["name"]}");
         Debug.Log($"User - user_id: {authData.UserData["user_id"]}");
-        Debug.Log($"User - Email: {authData.UserData["email"]}");
-        Debug.Log($"User ID: {authData.UserData["userId"]}");
-        Debug.Log($"App ID: {authData.UserData["appId"]}");
-        Debug.Log($"Package Name: {authData.UserData["packageName"]}");
+        Debug.Log($"User - Email: {(authData.UserData.ContainsKey("email") ? authData.UserData["email"] : "")}");
+        Debug.Log($"User ID: {(authData.UserData.ContainsKey("userId") ? authData.UserData["userId"] : "")}");
+        Debug.Log($"App ID: {(authData.UserData.ContainsKey("appId") ? authData.UserData["appId"] : "")}");
+        Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "")}");
         Debug.Log("=== AUTHENTICATION COMPLETED - MODULE INFORMATION ===");
         
         // Get module count from authData instead of deprecated API
