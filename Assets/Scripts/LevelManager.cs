@@ -33,7 +33,7 @@ public class LevelManager : MonoBehaviour
         
         // Set up authentication completion callback to log module information
         // See OnAuthenticationCompleted below for authentication completion callback
-        //Abxr.OnAuthCompleted += OnAuthenticationCompleted;
+        Abxr.OnAuthCompleted += OnAuthenticationCompleted;
     }
 
     private void CheckForCompletion()
@@ -204,26 +204,23 @@ public class LevelManager : MonoBehaviour
         }
         Debug.Log("=== AUTHENTICATION COMPLETED - SUCCESS ===");
 
-        //var authDataJson =AbxrLib.Runtime.Authentication.GetAuthData();
-        var authDataJson = "{\"token\": \"longtoken\",\"secret\": \"supersecret\",\"userData\": {\"id\": \"Bob\",\"name\": \"Bob Smith\",\"audioPreference\": \"0\",\"speedPreference\": \"0\",\"textPreference\": \"0\",\"user_id\": \"0000randomuserid\"},\"userId\": \"0000randomuserid\",\"modules\": [{\"id\": \"654c5789-9d03-4706-9a9b-cf0b0d75a706\",\"name\": \"Module 1 - 787 refuel\",\"target\": \"b787-refuel\",\"order\": 0},{\"id\": \"65576afb-3bbc-4593-b265-92d612f3004b\",\"name\": \"Module 2 - 787 Baggage Load\",\"target\": \"b787-baggage-load\",\"order\": 1},{\"id\": \"c07d1b9a-0678-4bf5-96c7-a17e00b1100f\",\"name\": \"Module 3 - 787 Baggage Unload\",\"target\": \"b787-baggage-unload\",\"order\": 2}],\"appId\": \"06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9\",\"packageName\": \"com.arbor.test\"}";
-        var authData = JObject.Parse(authDataJson);
+        var authData = AbxrLib.Runtime.Authentication.Authentication.GetAuthResponse();
 
         Debug.Log("=== AUTHENTICATION COMPLETED - USER INFORMATION ===");
-        Debug.Log("User Data: " + authData["userData"]);
-        Debug.Log("User - ID: " + authData["userData"]?["id"]);
-        Debug.Log("User - Name: " + authData["userData"]?["name"]);
-        Debug.Log("User - user_id: " + authData["userData"]?["user_id"]);
-        Debug.Log("User - Email: " + authData["userData"]?["email"]);
-        Debug.Log("User ID: " + authData["userId"]);
-        Debug.Log("App ID: " + authData["appId"]);
-        Debug.Log("Package Name: " + authData["packageName"]);
+        Debug.Log($"User - ID: {authData.UserData["id"]}");
+        Debug.Log($"User - Name: {authData.UserData["name"]}");
+        Debug.Log($"User - user_id: {authData.UserData["user_id"]}");
+        Debug.Log($"User - Email: {authData.UserData["email"]}");
+        Debug.Log($"User ID: {authData.UserData["userId"]}");
+        Debug.Log($"App ID: {authData.UserData["appId"]}");
+        Debug.Log($"Package Name: {authData.UserData["packageName"]}");
         Debug.Log("=== AUTHENTICATION COMPLETED - MODULE INFORMATION ===");
         
         // Get module count from authData instead of deprecated API
         int totalModuleCount = 0;
-        if (authData["modules"] != null && authData["modules"] is JArray modulesArray)
+        if (authData.Modules != null)
         {
-            totalModuleCount = modulesArray.Count;
+            totalModuleCount = authData.Modules.Count;
         }
         
         Debug.Log($"Total Modules Available: {totalModuleCount}");
@@ -237,7 +234,7 @@ public class LevelManager : MonoBehaviour
             Abxr.CurrentSessionData moduleTarget;
             while ((moduleTarget = Abxr.GetModuleTarget()) != null)
             {
-                Debug.Log($"Module [{moduleIndex}]: Target='{moduleTarget.moduleTarget}', UserID='{moduleTarget.userId}', UserEmail='{moduleTarget.userEmail}'");
+                Debug.Log($"Module [{moduleIndex}]: Target='{moduleTarget.moduleTarget}', UserID='{moduleTarget.userId}'");//, UserEmail='{moduleTarget.userEmail}'");
                 Debug.Log($"  - UserData: {(moduleTarget.userData != null ? "Available" : "None")}");
                 moduleIndex++;
             }
