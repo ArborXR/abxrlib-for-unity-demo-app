@@ -16,14 +16,14 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         Debug.Log("AbxrLib - Assessment Start");
-        Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
-        Debug.Log("AbxrLib - DeviceId: " + Abxr.GetDeviceId());
-        Debug.Log("AbxrLib - DeviceSerial: " + Abxr.GetDeviceSerial());
-        Debug.Log("AbxrLib - DeviceTitle: " + Abxr.GetDeviceTitle());
-        Debug.Log("AbxrLib - DeviceTags: " + Abxr.GetDeviceTags());
-        Debug.Log("AbxrLib - OrgId: " + Abxr.GetOrgId());
-        Debug.Log("AbxrLib - OrgTitle: " + Abxr.GetOrgTitle());
-        Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());
+        //Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
+        //Debug.Log("AbxrLib - DeviceId: " + Abxr.GetDeviceId());
+        //Debug.Log("AbxrLib - DeviceSerial: " + Abxr.GetDeviceSerial());
+        //Debug.Log("AbxrLib - DeviceTitle: " + Abxr.GetDeviceTitle());
+        // Debug.Log("AbxrLib - DeviceTags: " + Abxr.GetDeviceTags());
+        // Debug.Log("AbxrLib - OrgId: " + Abxr.GetOrgId());
+        // Debug.Log("AbxrLib - OrgTitle: " + Abxr.GetOrgTitle());
+        // Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());
         Abxr.EventAssessmentStart("stocking_training_unit_1");
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
