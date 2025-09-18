@@ -216,44 +216,70 @@ public class LevelManager : MonoBehaviour
         Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "")}");
         Debug.Log("=== AUTHENTICATION COMPLETED - MODULE INFORMATION ===");
         
-        // Get module count from authData instead of deprecated API
-        int totalModuleCount = 0;
-        if (authData.Modules != null)
+        var currentModule = Abxr.GetModuleTarget();
+        if (currentModule == null)
         {
-            totalModuleCount = authData.Modules.Count;
+            Debug.Log("No modules defined.");
+            return;
         }
-        
-        Debug.Log($"Total Modules Available: {totalModuleCount}");
-        
-        if (totalModuleCount > 0)
+
+        StartModule(currentModule.moduleTarget);
+        Debug.Log("All modules completed.");
+
+        Debug.Log("=== END MODULE INFORMATION ===");
+    }
+    private void StartModule(string moduleTarget)
+    {
+        Debug.Log($"User assigned module: {moduleTarget}");
+        var methodName = $"Module_{moduleTarget.Replace('-', '_')}";
+        //Debug.Log($"Looking for method: {methodName}"); // Log the method name being searched
+        var method = this.GetType().GetMethod(methodName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (method != null)
         {
-            Debug.Log("=== CYCLING THROUGH MODULE TARGETS (Developer API) ===");
-            int moduleIndex = 0;
-            
-            // Keep getting the next module target until none are left (returns null)
-            Abxr.CurrentSessionData moduleTarget;
-            while ((moduleTarget = Abxr.GetModuleTarget()) != null)
-            {
-                Debug.Log($"Module [{moduleIndex}]: Target='{moduleTarget.moduleTarget}', UserID='{moduleTarget.userId}'");//, UserEmail='{moduleTarget.userEmail}'");
-                Debug.Log($"  - UserData: {(moduleTarget.userData != null ? "Available" : "None")}");
-                moduleIndex++;
-            }
-            
-            Debug.Log($"Finished cycling through {moduleIndex} modules");
-            
-            // Check if all modules have been consumed
-            if (moduleIndex == totalModuleCount)
-            {
-                Debug.Log("=== ALL MODULES COMPLETED - READY FOR NEXT USER ===");
-                Debug.Log("Application should now exit user back to start and reauthenticate for next user");
-                // TODO: Implement exit to start screen and reauthentication logic
-            }
+            //Debug.Log($"Found method: {methodName}, invoking..."); // Log when method is found
+            method.Invoke(this, null);
         }
         else
         {
-            Debug.Log("No module targets available in authentication response");
+            Debug.Log($"No function found for module: {moduleTarget}, trying next module.");
+            StartNextModule();
         }
-        
-        Debug.Log("=== END MODULE INFORMATION ===");
-    }   
+    }
+
+    private void StartNextModule()
+    {
+        var nextModule = Abxr.GetModuleTarget();
+        if (nextModule != null)
+        {
+            //Debug.Log($"Advancing to next module: {nextModule.moduleTarget}");
+            StartModule(nextModule.moduleTarget);
+        }
+        else
+        {
+            // Debug.Log("All modules completed.");
+        }
+    }
+    private void Module_b787_baggage_load()
+    {
+        Debug.Log("Entered module: b787-baggage-load");
+        //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
+        Debug.Log("Completed module: b787-baggage-load, lets start the next module (if there is one)");
+        StartNextModule();
+    }
+
+    private void Module_b787_refuel()
+    {
+        Debug.Log("Entered module: b787-refuel");
+        //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
+        Debug.Log("Completed module: b787-refuel, lets start the next module (if there is one)");
+        StartNextModule();
+    }
+
+    private void Module_b787_baggage_unload()
+    {
+        Debug.Log("Entered module: b787-baggage-unload");
+        //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
+        Debug.Log("Completed module: b787-baggage-unload, lets start the next module (if there is one)");
+    }
+
 }
