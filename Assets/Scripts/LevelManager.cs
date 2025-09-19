@@ -27,6 +27,13 @@ public class LevelManager : MonoBehaviour
         // Debug.Log("AbxrLib - OrgTitle: " + Abxr.GetOrgTitle());
         // Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());
         Abxr.EventAssessmentStart("stocking_training_unit_1");
+        
+        // Initialize Android deep link handler for external deep links (not moduleTarget)
+        InitializeAndroidDeepLinkHandler();
+        
+        // Subscribe to AbxrLib's moduleTarget deep link event
+        Abxr.OnModuleTargetDeepLink += OnDeepLinkReceived;
+        
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
         InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
@@ -246,5 +253,59 @@ public class LevelManager : MonoBehaviour
         //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
         Debug.Log("Completed module: b787-baggage-unload)");
     }
+
+    
+    #region Android Deep Link Integration (for external Android deep links)
+    
+    private void InitializeAndroidDeepLinkHandler()
+    {
+        // Subscribe to Android deep link events (not from moduleTarget)
+        DeepLinkHandler.OnDeepLinkReceived += OnDeepLinkReceived;
+        
+        // Initialize the Android deep link handler singleton
+        DeepLinkHandler.Instance.enabled = true;
+        
+        Debug.Log("LevelManager: Android deep link handler initialized");
+    }
+    
+    private void OnDestroy()
+    {
+        // Unsubscribe from Android deep link events
+        DeepLinkHandler.OnDeepLinkReceived -= OnDeepLinkReceived;
+        
+        // Unsubscribe from AbxrLib moduleTarget deep link events
+        Abxr.OnModuleTargetDeepLink -= OnDeepLinkReceived;
+    }
+    
+    private void OnDeepLinkReceived(string moduleName)
+    {
+        Debug.Log($"LevelManager: Deep link received for module: {moduleName}");
+        
+        // Map module names to actual module methods
+        switch (moduleName.ToLower())
+        {
+            case "b787_baggage_load":
+                Debug.Log("LevelManager: Executing b787_baggage_load module via deep link");
+                Module_b787_baggage_load();
+                break;
+                
+            case "b787_refuel":
+                Debug.Log("LevelManager: Executing b787_refuel module via deep link");
+                Module_b787_refuel();
+                break;
+                
+            case "b787_baggage_unload":
+                Debug.Log("LevelManager: Executing b787_baggage_unload module via deep link");
+                Module_b787_baggage_unload();
+                break;
+                
+            default:
+                Debug.LogWarning($"LevelManager: Unknown module name in deep link: {moduleName}");
+                break;
+        }
+    }
+    
+    
+    #endregion
 
 }
