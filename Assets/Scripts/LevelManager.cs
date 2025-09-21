@@ -31,8 +31,8 @@ public class LevelManager : MonoBehaviour
         // Initialize Android deep link handler for external deep links (not moduleTarget)
         InitializeAndroidDeepLinkHandler();
         
-        // Subscribe to AbxrLib's moduleTarget deep link event
-        Abxr.OnModuleTargetDeepLink += OnDeepLinkReceived;
+        // Subscribe to AbxrLib's moduleTarget event
+        Abxr.OnModuleTarget += OnDeepLinkReceived;
         
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
@@ -230,7 +230,8 @@ public class LevelManager : MonoBehaviour
             return;
         }
 
-        Abxr.ExecuteModuleSequence(this, "Module_");
+        // Execute module sequence using the OnModuleTarget event
+        Abxr.ExecuteModuleSequence();
         Debug.Log("=== END MODULE INFORMATION ===");
     }
     private void Module_b787_baggage_load()
@@ -273,8 +274,8 @@ public class LevelManager : MonoBehaviour
         // Unsubscribe from Android deep link events
         DeepLinkHandler.OnDeepLinkReceived -= OnDeepLinkReceived;
         
-        // Unsubscribe from AbxrLib moduleTarget deep link events
-        Abxr.OnModuleTargetDeepLink -= OnDeepLinkReceived;
+        // Unsubscribe from AbxrLib moduleTarget events
+        Abxr.OnModuleTarget -= OnDeepLinkReceived;
     }
     
     private void OnDeepLinkReceived(string moduleName)

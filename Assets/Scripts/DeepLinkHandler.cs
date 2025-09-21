@@ -38,6 +38,11 @@ public class DeepLinkHandler : MonoBehaviour
         {
             // Initialize the deep link handler
             InitializeDeepLinkHandler();
+            
+            #if UNITY_WEBGL && !UNITY_EDITOR
+            // Subscribe to URL changes for WebGL
+            Application.deepLinkActivated += OnWebGLDeepLinkActivated;
+            #endif
         }
         
         private void InitializeDeepLinkHandler()
@@ -59,6 +64,9 @@ public class DeepLinkHandler : MonoBehaviour
                     ProcessDeepLink(data);
                 }
             }
+            #elif UNITY_WEBGL && !UNITY_EDITOR
+            // Check for WebGL URL parameters
+            CheckWebGLUrlParameters();
             #else
             Debug.Log("DeepLinkHandler: Running in editor - deep links will be simulated");
             #endif
@@ -102,6 +110,64 @@ public class DeepLinkHandler : MonoBehaviour
             #endif
         }
         
+        private void CheckWebGLUrlParameters()
+        {
+            #if UNITY_WEBGL && !UNITY_EDITOR
+            try
+            {
+                string currentUrl = Application.absoluteURL;
+                Debug.Log($"DeepLinkHandler: Checking WebGL URL: {currentUrl}");
+                
+                // Check for module parameter: ?module=b787_baggage_load
+                string moduleParam = GetQueryParam("module", currentUrl);
+                if (!string.IsNullOrEmpty(moduleParam))
+                {
+                    Debug.Log($"DeepLinkHandler: Found module parameter: {moduleParam}");
+                    OnDeepLinkReceived?.Invoke(moduleParam);
+                    return;
+                }
+                
+                // Check for path-based module: /demoapp/b787_baggage_load
+                if (currentUrl.Contains("/demoapp/"))
+                {
+                    Uri uri = new Uri(currentUrl);
+                    if (uri.AbsolutePath.StartsWith("/demoapp/"))
+                    {
+                        string path = uri.AbsolutePath.Substring(6); // Remove "/demoapp/"
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            Debug.Log($"DeepLinkHandler: Found path-based module: {path}");
+                            OnDeepLinkReceived?.Invoke(path);
+                            return;
+                        }
+                    }
+                }
+                
+                Debug.Log("DeepLinkHandler: No module parameters found in WebGL URL");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"DeepLinkHandler: Error checking WebGL URL parameters: {e.Message}");
+            }
+            #endif
+        }
+        
+        private string GetQueryParam(string key, string url)
+        {
+            var question = url.IndexOf('?');
+            if (question < 0) return "";
+            var query = url.Substring(question + 1);
+            foreach (var pair in query.Split('&'))
+            {
+                var kv = pair.Split('=');
+                if (kv.Length == 2 && Uri.UnescapeDataString(kv[0]) == key)
+                {
+                    return Uri.UnescapeDataString(kv[1]);
+                }
+            }
+            return "";
+        }
+        
         private void ProcessDeepLink(string deepLink)
         {
             Debug.Log($"DeepLinkHandler: Processing deep link: {deepLink}");
@@ -139,6 +205,22 @@ public class DeepLinkHandler : MonoBehaviour
             {
                 Debug.LogError($"DeepLinkHandler: Error processing deep link: {e.Message}");
             }
+        }
+        
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        private void OnWebGLDeepLinkActivated(string url)
+        {
+            Debug.Log($"DeepLinkHandler: WebGL deep link activated: {url}");
+            ProcessDeepLink(url);
+        }
+        #endif
+        
+        private void OnDestroy()
+        {
+            #if UNITY_WEBGL && !UNITY_EDITOR
+            // Unsubscribe from WebGL URL changes
+            Application.deepLinkActivated -= OnWebGLDeepLinkActivated;
+            #endif
         }
         
         // Public method to simulate deep links in editor
