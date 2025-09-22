@@ -685,6 +685,7 @@ GameObject:
   - component: {fileID: 181380311}
   - component: {fileID: 181380313}
   - component: {fileID: 181380312}
+  - component: {fileID: 181380314}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -747,6 +748,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotationOffset: 180
   applyOnStart: 1
+--- !u!114 &181380314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 181380310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37661ac8c834149ed907097a8a3c69f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VirtualHand
+  createHandOnStart: 1
+  handColor: {r: 0, g: 1, b: 1, a: 1}
+  handSize: 0.2
+  distanceFromCamera: 1.5
+  heightOffset: -0.3
+  enableMouseWheelControl: 1
+  wheelSensitivity: 0.5
+  minHeight: -1
+  maxHeight: 1
+  enableDistanceControl: 1
+  distanceSensitivity: 0.3
+  minDistance: 0.5
+  maxDistance: 3
+  enableKeyboardControls: 1
+  keyboardSensitivity: 0.1
 --- !u!1001 &188012238
 PrefabInstance:
   m_ObjectHideFlags: 0

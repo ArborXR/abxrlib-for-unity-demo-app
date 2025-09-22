@@ -704,10 +704,22 @@ public class DesktopInputController : MonoBehaviour
         
         if (!isGrabbing || (!hasXRObject && !hasWebGLObject) || grabbedRigidbody == null) return;
         
-        // Position the object in front of the camera
-        Vector3 targetPosition = xrCamera.transform.position + 
-                               xrCamera.transform.forward * grabDistance + 
-                               grabOffset;
+        Vector3 targetPosition;
+        
+        // Check if we have a virtual hand for non-VR users
+        VirtualHand virtualHand = FindFirstObjectByType<VirtualHand>();
+        if (virtualHand != null && virtualHand.IsHandActive())
+        {
+            // Use virtual hand position for non-VR users
+            targetPosition = virtualHand.GetHandPosition() + grabOffset;
+        }
+        else
+        {
+            // Use camera position for VR users
+            targetPosition = xrCamera.transform.position + 
+                           xrCamera.transform.forward * grabDistance + 
+                           grabOffset;
+        }
         
         // Smoothly move the object to the target position
         grabbedRigidbody.MovePosition(Vector3.Lerp(grabbedRigidbody.position, targetPosition, Time.deltaTime * 10f));

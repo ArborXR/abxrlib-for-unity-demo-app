@@ -142,6 +142,13 @@ public class LevelManager : MonoBehaviour
         Destroy(completionData.usedObject);
         Destroy(completionData.usedTarget.GetComponent<Outline>());
         Destroy(completionData.usedTarget.GetComponent<TargetLocation>());
+        
+        // Remove any Rigidbody from placed fruit to prevent it from being grabbable
+        Rigidbody placedRigidbody = completionData.usedTarget.GetComponent<Rigidbody>();
+        if (placedRigidbody != null)
+        {
+            Destroy(placedRigidbody);
+        }
 
         // Calculate Score - later this should be moved out of level manager into its own score manager class that is persistant
         score += (1 / completionData.positionDistance) > 5 ? 5 : 1 / completionData.positionDistance;
