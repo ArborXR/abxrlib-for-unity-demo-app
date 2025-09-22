@@ -103,3 +103,5 @@ Assets/Resources/*.asset
 Assets/Resources/*.meta
 Assets/Resources/PerformanceTestRun*.json
 /.utmp
+/Debug/
+
