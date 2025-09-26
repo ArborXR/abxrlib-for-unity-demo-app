@@ -48,7 +48,7 @@ public class LevelManager : MonoBehaviour
         if (_completedTargets >= _totalTargets)
         {
             //Without meta data
-            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
+            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.EventStatus.Pass : Abxr.EventStatus.Fail);
 
             //With meta data
             var assessmentMetadata = new Abxr.Dict
@@ -56,7 +56,7 @@ public class LevelManager : MonoBehaviour
                 ["mode"] = "easy",
                 ["touched_floor"] = "true"
             };
-            Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail, meta: assessmentMetadata);
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.EventStatus.Pass : Abxr.EventStatus.Fail, meta: assessmentMetadata);
             if (score > passingScore)
             {
                 PlaySuccessSound();
@@ -102,7 +102,9 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
+            Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Incorrect, "Wrong spot", placementMetadata);
             Abxr.LogCritical($"Improper placement of {completionData.usedType}");
             StartCoroutine(PlayFailSoundThenRestart());
         }
@@ -115,7 +117,8 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
+            Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Correct, "Correct spot", placementMetadata);
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
@@ -221,18 +224,17 @@ public class LevelManager : MonoBehaviour
         Debug.Log($"User ID: {(authData.UserData.ContainsKey("userId") ? authData.UserData["userId"] : "Not provided")}");
         Debug.Log($"App ID: {(authData.UserData.ContainsKey("appId") ? authData.UserData["appId"] : "Not provided")}");
         Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "Not provided")}");
-        Debug.Log("=== AUTHENTICATION COMPLETED - MODULE INFORMATION ===");
+        Debug.Log("=== AUTHENTICATION COMPLETED ===");
+        Debug.Log("=== MODULE INFORMATION ===");
         
         if (authData.Modules == null || authData.Modules.Count == 0)
         {
             Debug.Log("No modules defined.");
-            Debug.Log("=== END MODULE INFORMATION ===");
-            return;
+        } else {
+            Debug.Log("Modules defined, will execute next.");
         }
-
-        // Execute module sequence using the OnModuleTarget event
-        Abxr.ExecuteModuleSequence();
         Debug.Log("=== END MODULE INFORMATION ===");
+        return;
     }
     private void Module_b787_baggage_load()
     {
@@ -278,30 +280,33 @@ public class LevelManager : MonoBehaviour
         Abxr.OnModuleTarget -= OnDeepLinkReceived;
     }
     
-    private void OnDeepLinkReceived(string moduleName)
+    private void OnDeepLinkReceived(string deepLink)
     {
-        Debug.Log($"LevelManager: Deep link received for module: {moduleName}");
+        Debug.Log($"LevelManager: Deep link received for module: {deepLink}");
         
         // Map module names to actual module methods
-        switch (moduleName.ToLower())
+        switch (deepLink.ToLower())
         {
             case "b787_baggage_load":
+            case "b787-baggage-load":
                 Debug.Log("LevelManager: Executing b787_baggage_load module via deep link");
                 Module_b787_baggage_load();
                 break;
                 
             case "b787_refuel":
+            case "b787-refuel":
                 Debug.Log("LevelManager: Executing b787_refuel module via deep link");
                 Module_b787_refuel();
                 break;
                 
             case "b787_baggage_unload":
+            case "b787-baggage-unload":
                 Debug.Log("LevelManager: Executing b787_baggage_unload module via deep link");
                 Module_b787_baggage_unload();
                 break;
                 
             default:
-                Debug.LogWarning($"LevelManager: Unknown module name in deep link: {moduleName}");
+                Debug.LogWarning($"LevelManager: Unknown deep link: {deepLink}");
                 break;
         }
     }

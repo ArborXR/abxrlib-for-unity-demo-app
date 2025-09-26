@@ -50,10 +50,10 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
               
         // For demonstration, let's log an Abxr interaction
         Abxr.EventInteractionStart("toggle_button_second_action");
-        Abxr.EventInteractionComplete("toggle_button_second_action", "second_action", "Second action completed", Abxr.InteractionType.Text);
+        Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
 
         Debug.Log("AbxrLib - About to send assessment complete");
-        Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.ResultOptions.Pass);
+        Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.EventStatus.Pass);
         Debug.Log("AbxrLib - Assessment complete sent, waiting before exit");
         
         // Wait a moment for the assessment to be sent before exiting
