@@ -25,14 +25,10 @@ public class LevelManager : MonoBehaviour
         // Debug.Log("AbxrLib - DeviceTags: " + Abxr.GetDeviceTags());
         // Debug.Log("AbxrLib - OrgId: " + Abxr.GetOrgId());
         // Debug.Log("AbxrLib - OrgTitle: " + Abxr.GetOrgTitle());
-        // Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());
-        Abxr.EventAssessmentStart("stocking_training_unit_1");
-        
+        // Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());        
+
         // Initialize Android deep link handler for external deep links (not moduleTarget)
         InitializeAndroidDeepLinkHandler();
-        
-        // Subscribe to AbxrLib's moduleTarget event
-        Abxr.OnModuleTarget += OnDeepLinkReceived;
         
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
@@ -41,6 +37,10 @@ public class LevelManager : MonoBehaviour
         // Set up authentication completion callback to log module information
         // See OnAuthenticationCompleted below for authentication completion callback
         Abxr.OnAuthCompleted += OnAuthenticationCompleted;
+        // Subscribe to AbxrLib's moduleTarget event
+        Abxr.OnModuleTarget += OnDeepLinkReceived;
+        
+        Abxr.EventAssessmentStart("stocking_training_unit_1");
     }
 
     private void CheckForCompletion()
@@ -217,13 +217,20 @@ public class LevelManager : MonoBehaviour
         var authData = AbxrLib.Runtime.Authentication.Authentication.GetAuthResponse();
 
         Debug.Log("=== AUTHENTICATION COMPLETED - USER INFORMATION ===");
-        Debug.Log($"User - ID: {(authData.UserData.ContainsKey("id") ? authData.UserData["id"] : "Not provided")}");
-        Debug.Log($"User - Name: {(authData.UserData.ContainsKey("name") ? authData.UserData["name"] : "Not provided")}");
-        Debug.Log($"User - user_id: {(authData.UserData.ContainsKey("user_id") ? authData.UserData["user_id"] : "Not provided")}");
-        Debug.Log($"User - Email: {(authData.UserData.ContainsKey("email") ? authData.UserData["email"] : "Not provided")}");
-        Debug.Log($"User ID: {(authData.UserData.ContainsKey("userId") ? authData.UserData["userId"] : "Not provided")}");
-        Debug.Log($"App ID: {(authData.UserData.ContainsKey("appId") ? authData.UserData["appId"] : "Not provided")}");
-        Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "Not provided")}");
+        if (authData.UserData != null)
+        {
+            Debug.Log($"User - ID: {(authData.UserData.ContainsKey("id") ? authData.UserData["id"] : "Not provided")}");
+            Debug.Log($"User - Name: {(authData.UserData.ContainsKey("name") ? authData.UserData["name"] : "Not provided")}");
+            Debug.Log($"User - user_id: {(authData.UserData.ContainsKey("user_id") ? authData.UserData["user_id"] : "Not provided")}");
+            Debug.Log($"User - Email: {(authData.UserData.ContainsKey("email") ? authData.UserData["email"] : "Not provided")}");
+            Debug.Log($"User ID: {(authData.UserData.ContainsKey("userId") ? authData.UserData["userId"] : "Not provided")}");
+            Debug.Log($"App ID: {(authData.UserData.ContainsKey("appId") ? authData.UserData["appId"] : "Not provided")}");
+            Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "Not provided")}");
+        }
+        else
+        {
+            Debug.Log("User data is not available in authentication response");
+        }
         Debug.Log("=== AUTHENTICATION COMPLETED ===");
         Debug.Log("=== MODULE INFORMATION ===");
         
