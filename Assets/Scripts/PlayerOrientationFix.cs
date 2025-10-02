@@ -2,14 +2,14 @@ using UnityEngine;
 using Unity.XR.CoreUtils;
 
 /// <summary>
-/// Fixes the player orientation issue where the player starts facing backwards.
-/// This script rotates the XR Origin 180 degrees on start to face the correct direction.
+/// Manages the player orientation for optimal pinpad positioning.
+/// This script can rotate the XR Origin to face the correct direction for UI interactions.
 /// </summary>
 public class PlayerOrientationFix : MonoBehaviour
 {
     [Header("Orientation Settings")]
-    [Tooltip("The Y-axis rotation to apply to fix the orientation (default: 180 for backwards fix)")]
-    public float rotationOffset = 180f;
+    [Tooltip("The Y-axis rotation to apply to fix the orientation (default: 0 for straight forward)")]
+    public float rotationOffset = 0f;
     
     [Tooltip("Whether to apply the rotation fix automatically on Start")]
     public bool applyOnStart = true;
