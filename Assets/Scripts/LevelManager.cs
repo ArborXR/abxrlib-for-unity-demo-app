@@ -12,11 +12,12 @@ public class LevelManager : MonoBehaviour
     private int _totalTargets;
     private int _completedTargets;
     private const double passingScore = 70;
+	private System.Threading.Thread _thread = null;
 
     private void Start()
     {
         Debug.Log("AbxrLib - Assessment Start");
-        Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
+        Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
         Debug.Log("AbxrLib - DeviceId: " + Abxr.GetDeviceId());
         Debug.Log("AbxrLib - DeviceSerial: " + Abxr.GetDeviceSerial());
         Debug.Log("AbxrLib - DeviceTitle: " + Abxr.GetDeviceTitle());
@@ -28,13 +29,64 @@ public class LevelManager : MonoBehaviour
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
         InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
-        
-        // Set up authentication completion callback to log module information
-        //Abxr.OnAuthCompleted(OnAuthenticationCompleted);
-        //See OnAuthenticationCompleted below for authentication completion callback
-    }
 
-    private void CheckForCompletion()
+		// Set up authentication completion callback to log module information
+		//Abxr.OnAuthCompleted(OnAuthenticationCompleted);
+		//See OnAuthenticationCompleted below for authentication completion callback
+		// ---
+		Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - About to start the thread that is going to wait for service to be not null and then call whatTimeIsIt()");
+		_thread = new System.Threading.Thread(ThreadMain);
+		if (_thread != null)
+		{
+			Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - The thread got created successfully, now let us start it.");
+			_thread.Start(this);
+		}
+		else
+		{
+			Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - That's just lovely Jeremy, the thread didn't start.");
+		}
+	}
+	void InvokeWhenServiceIsThere()
+	{
+		Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Praise be to dear leader of the DPRK, the service exists, going to call whatTimeIsIt() and then bail this thread... drumroll please, whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+	}
+	void InvokeWhenServiceIsNull()
+	{
+		Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Abxr.IsServiceAvailable() returned false but there is a point where the service variable is indeed not null so let us call the bloody thing anyway... whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+	}
+	void InvokeWhenServiceIsWhateverItIs()
+	{
+		if (Abxr.IsServiceAvailable())
+		{
+			Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Praise be to dear leader of the DPRK, the service exists, going to call whatTimeIsIt() and then bail this thread... drumroll please, whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+		}
+		else
+		{
+			//Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Abxr.IsServiceAvailable() returned false but there is a point where the service variable is indeed not null so let us call the bloody thing anyway... whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+			Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Van damn, service still does not exist yet so not going to call whatTimeIsit().");
+		}
+	}
+	static void ThreadMain(object pThis)
+	{
+		for (;;)
+		{
+			System.Threading.Thread.Sleep(1000);
+			//if (Abxr.IsServiceAvailable())
+			//{
+			//	(pThis as LevelManager).Invoke("InvokeWhenServiceIsThere", 0.0f);
+			//	//Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Praise be to dear leader of the DPRK, the service exists, going to call whatTimeIsIt() and then bail this thread... drumroll please, whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+			//	break;
+			//}
+			//else
+			//{
+			//	(pThis as LevelManager).Invoke("InvokeWhenServiceIsNull", 0.0f);
+			//	//Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Abxr.IsServiceAvailable() returned false but there is a point where the service variable is indeed not null so let us call the bloody thing anyway... whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+			//	//Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Van damn, service still does not exist yet so not going to call whatTimeIsit().");
+			//}
+			(pThis as LevelManager).Invoke("InvokeWhenServiceIsWhateverItIs", 0.0f);
+		}
+	}
+	private void CheckForCompletion()
     {
         if (_completedTargets >= _totalTargets)
         {
