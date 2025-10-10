@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 public class LevelManager : MonoBehaviour
 {
@@ -16,14 +18,29 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         Debug.Log("AbxrLib - Assessment Start");
-        Abxr.EventAssessmentStart("stocking_training_unit_1");
+        //Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
+        //Debug.Log("AbxrLib - DeviceId: " + Abxr.GetDeviceId());
+        //Debug.Log("AbxrLib - DeviceSerial: " + Abxr.GetDeviceSerial());
+        //Debug.Log("AbxrLib - DeviceTitle: " + Abxr.GetDeviceTitle());
+        // Debug.Log("AbxrLib - DeviceTags: " + Abxr.GetDeviceTags());
+        // Debug.Log("AbxrLib - OrgId: " + Abxr.GetOrgId());
+        // Debug.Log("AbxrLib - OrgTitle: " + Abxr.GetOrgTitle());
+        // Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());        
+
+        // Initialize Android deep link handler for external deep links (not moduleTarget)
+        InitializeAndroidDeepLinkHandler();
+        
         InitializeGame();
         InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
         InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
         
         // Set up authentication completion callback to log module information
-        //Abxr.OnAuthCompleted(OnAuthenticationCompleted);
-        //See OnAuthenticationCompleted below for authentication completion callback
+        // See OnAuthenticationCompleted below for authentication completion callback
+        Abxr.OnAuthCompleted += OnAuthenticationCompleted;
+        // Subscribe to AbxrLib's moduleTarget event
+        Abxr.OnModuleTarget += OnDeepLinkReceived;
+        
+        Abxr.EventAssessmentStart("stocking_training_unit_1");
     }
 
     private void CheckForCompletion()
@@ -31,7 +48,7 @@ public class LevelManager : MonoBehaviour
         if (_completedTargets >= _totalTargets)
         {
             //Without meta data
-            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail);
+            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.EventStatus.Pass : Abxr.EventStatus.Fail);
 
             //With meta data
             var assessmentMetadata = new Abxr.Dict
@@ -39,7 +56,7 @@ public class LevelManager : MonoBehaviour
                 ["mode"] = "easy",
                 ["touched_floor"] = "true"
             };
-            Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.ResultOptions.Pass : Abxr.ResultOptions.Fail, meta: assessmentMetadata);
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.EventStatus.Pass : Abxr.EventStatus.Fail, meta: assessmentMetadata);
             if (score > passingScore)
             {
                 PlaySuccessSound();
@@ -85,7 +102,9 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
+            Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Incorrect, "Wrong spot", placementMetadata);
             Abxr.LogCritical($"Improper placement of {completionData.usedType}");
             StartCoroutine(PlayFailSoundThenRestart());
         }
@@ -98,7 +117,8 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
+            Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Correct, "Correct spot", placementMetadata);
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
@@ -184,52 +204,121 @@ public class LevelManager : MonoBehaviour
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
-
-/*
-    private void OnAuthenticationCompleted(Abxr.AuthCompletedData authData)
+    private void OnAuthenticationCompleted(bool success, string error)
     {
-        Debug.Log("=== AUTHENTICATION COMPLETED - MODULE INFORMATION ===");
-        
-        // Get module count from authData instead of deprecated API
-        int totalModuleCount = authData.modules?.Count ?? 0;
-        Debug.Log($"Total Modules Available: {totalModuleCount}");
-        
-        if (totalModuleCount > 0)
+        if (!success)
         {
-            Debug.Log("=== CYCLING THROUGH MODULE TARGETS (Developer API) ===");
-            int moduleIndex = 0;
-            
-            // Keep getting the next module target until none are left (returns null)
-            Abxr.CurrentSessionData moduleTarget;
-            while ((moduleTarget = Abxr.GetModuleTarget()) != null)
-            {
-                Debug.Log($"Module [{moduleIndex}]: Target='{moduleTarget.moduleTarget}', UserID='{moduleTarget.userId}', UserEmail='{moduleTarget.userEmail}'");
-                Debug.Log($"  - UserData: {(moduleTarget.userData != null ? "Available" : "None")}");
-                moduleIndex++;
-            }
-            
-            Debug.Log($"Finished cycling through {moduleIndex} modules");
-            
-            // Check if all modules have been consumed
-            if (moduleIndex == totalModuleCount)
-            {
-                Debug.Log("=== ALL MODULES COMPLETED - READY FOR NEXT USER ===");
-                Debug.Log("Application should now exit user back to start and reauthenticate for next user");
-                // TODO: Implement exit to start screen and reauthentication logic
-            }
+            Debug.Log("=== AUTHENTICATION COMPLETED - FAILURE ===");
+            Debug.Log("Error: " + error);
+            return;
+        }
+        Debug.Log("=== AUTHENTICATION COMPLETED - SUCCESS ===");
+
+        var authData = AbxrLib.Runtime.Authentication.Authentication.GetAuthResponse();
+
+        Debug.Log("=== AUTHENTICATION COMPLETED - USER INFORMATION ===");
+        if (authData.UserData != null)
+        {
+            Debug.Log($"User - ID: {(authData.UserData.ContainsKey("id") ? authData.UserData["id"] : "Not provided")}");
+            Debug.Log($"User - Name: {(authData.UserData.ContainsKey("name") ? authData.UserData["name"] : "Not provided")}");
+            Debug.Log($"User - user_id: {(authData.UserData.ContainsKey("user_id") ? authData.UserData["user_id"] : "Not provided")}");
+            Debug.Log($"User - Email: {(authData.UserData.ContainsKey("email") ? authData.UserData["email"] : "Not provided")}");
+            Debug.Log($"User ID: {(authData.UserData.ContainsKey("userId") ? authData.UserData["userId"] : "Not provided")}");
+            Debug.Log($"App ID: {(authData.UserData.ContainsKey("appId") ? authData.UserData["appId"] : "Not provided")}");
+            Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "Not provided")}");
         }
         else
         {
-            Debug.Log("No module targets available in authentication response");
+            Debug.Log("User data is not available in authentication response");
         }
+        Debug.Log("=== AUTHENTICATION COMPLETED ===");
+        Debug.Log("=== MODULE INFORMATION ===");
         
+        if (authData.Modules == null || authData.Modules.Count == 0)
+        {
+            Debug.Log("No modules defined.");
+        } else {
+            Debug.Log("Modules defined, will execute next.");
+        }
         Debug.Log("=== END MODULE INFORMATION ===");
+        return;
+    }
+    private void Module_b787_baggage_load()
+    {
+        Debug.Log("Entered module: b787-baggage-load");
+        //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
+        Debug.Log("Completed module: b787-baggage-load");
+    }
+
+    private void Module_b787_refuel()
+    {
+        Debug.Log("Entered module: b787-refuel");
+        //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
+        Debug.Log("Completed module: b787-refuel");
+    }
+
+    private void Module_b787_baggage_unload()
+    {
+        Debug.Log("Entered module: b787-baggage-unload");
+        //Debug.Log($"  - UserData: {(Abxr.GetUserData() != null ? JsonConvert.SerializeObject(Abxr.GetUserData()) : "None")}");
+        Debug.Log("Completed module: b787-baggage-unload)");
+    }
+
+    
+    #region Android Deep Link Integration (for external Android deep links)
+    
+    private void InitializeAndroidDeepLinkHandler()
+    {
+        // Subscribe to Android deep link events (not from moduleTarget)
+        DeepLinkHandler.OnDeepLinkReceived += OnDeepLinkReceived;
+        
+        // Initialize the Android deep link handler singleton
+        DeepLinkHandler.Instance.enabled = true;
+        
+        Debug.Log("LevelManager: Android deep link handler initialized");
     }
     
     private void OnDestroy()
     {
-        // Clean up the authentication callback to avoid memory leaks
-        Abxr.RemoveAuthCompletedCallback(OnAuthenticationCompleted);
+        // Unsubscribe from Android deep link events
+        DeepLinkHandler.OnDeepLinkReceived -= OnDeepLinkReceived;
+        
+        // Unsubscribe from AbxrLib moduleTarget events
+        Abxr.OnModuleTarget -= OnDeepLinkReceived;
     }
-*/
+    
+    private void OnDeepLinkReceived(string deepLink)
+    {
+        Debug.Log($"LevelManager: Deep link received for module: {deepLink}");
+        
+        // Map module names to actual module methods
+        switch (deepLink.ToLower())
+        {
+            case "b787_baggage_load":
+            case "b787-baggage-load":
+                Debug.Log("LevelManager: Executing b787_baggage_load module via deep link");
+                Module_b787_baggage_load();
+                break;
+                
+            case "b787_refuel":
+            case "b787-refuel":
+                Debug.Log("LevelManager: Executing b787_refuel module via deep link");
+                Module_b787_refuel();
+                break;
+                
+            case "b787_baggage_unload":
+            case "b787-baggage-unload":
+                Debug.Log("LevelManager: Executing b787_baggage_unload module via deep link");
+                Module_b787_baggage_unload();
+                break;
+                
+            default:
+                Debug.LogWarning($"LevelManager: Unknown deep link: {deepLink}");
+                break;
+        }
+    }
+    
+    
+    #endregion
+
 }
