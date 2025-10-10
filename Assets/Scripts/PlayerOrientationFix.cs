@@ -4,6 +4,7 @@ using Unity.XR.CoreUtils;
 /// <summary>
 /// Manages the player orientation for optimal pinpad positioning.
 /// This script can rotate the XR Origin to face the correct direction for UI interactions.
+/// Default rotation is 0 degrees for straight forward orientation.
 /// </summary>
 public class PlayerOrientationFix : MonoBehaviour
 {
