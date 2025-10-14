@@ -60,7 +60,7 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         StartCoroutine(ExitAfterDelay());
     }
     
-    private void PerformQuickAssessment()
+    public void PerformQuickAssessment()
     {
         Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveStart");
         Abxr.EventObjectiveStart("toggle_button_first_action");

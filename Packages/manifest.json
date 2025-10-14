@@ -1,15 +1,16 @@
 {
   "dependencies": {
     "com.arborxr.unity": "https://github.com/ArborXR/abxrlib-for-unity.git",
-    "com.unity.collab-proxy": "2.8.2",
+    "com.unity.collab-proxy": "2.9.3",
     "com.unity.feature.development": "1.0.2",
     "com.unity.feature.vr": "1.0.1",
+    "com.unity.mobile.android-logcat": "1.4.6",
     "com.unity.render-pipelines.universal": "17.2.0",
     "com.unity.visualscripting": "1.9.8",
     "com.unity.xr.interaction.toolkit": "3.2.1",
     "com.unity.xr.management": "4.5.1",
     "com.unity.xr.openxr": "1.15.1",
-    "com.unity.xr.picoxr": "file:/Users/dan/Documents/GitHub/arborxr/PICO Unity Integration SDK-3.2.0-20250707",
+    "com.unity.xr.picoxr": "file:../NonUPM/PICO Unity Integration SDK-3.3.0-20250917",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
