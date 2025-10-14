@@ -59,6 +59,23 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         // Wait a moment for the assessment to be sent before exiting
         StartCoroutine(ExitAfterDelay());
     }
+    
+    private void PerformQuickAssessment()
+    {
+        Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveStart");
+        Abxr.EventObjectiveStart("toggle_button_first_action");
+        Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveComplete");
+        Abxr.EventObjectiveComplete("toggle_button_first_action", 100, Abxr.EventStatus.Complete);
+        Debug.Log("ToggleActionButton: Successfully completed first action");
+        Abxr.EventInteractionStart("toggle_button_second_action");
+        Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
+        Debug.Log("AbxrLib - About to send assessment complete");
+        Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.EventStatus.Pass);
+        Debug.Log("AbxrLib - Assessment complete sent, waiting before exit");
+        
+        // Wait a moment for the assessment to be sent before exiting
+        StartCoroutine(ExitAfterDelay());
+    }
 
     private System.Collections.IEnumerator ExitAfterDelay()
     {
