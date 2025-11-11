@@ -13,6 +13,7 @@ public class LevelManager : MonoBehaviour
     private int _completedTargets;
     private const double passingScore = 70;
 	private System.Threading.Thread _thread = null;
+	private bool m_bInvokeSucceeded = false;
 
     private void Start()
     {
@@ -56,9 +57,11 @@ public class LevelManager : MonoBehaviour
 	}
 	void InvokeWhenServiceIsWhateverItIs()
 	{
-		if (Abxr.IsServiceAvailable())
+		if (Abxr.ServiceIsFullyInitialized())
 		{
 			Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Praise be to dear leader of the DPRK, the service exists, going to call whatTimeIsIt() and then bail this thread... drumroll please, whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
+			// ---
+			m_bInvokeSucceeded = true;
 		}
 		else
 		{
@@ -84,6 +87,11 @@ public class LevelManager : MonoBehaviour
 			//	//Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Van damn, service still does not exist yet so not going to call whatTimeIsit().");
 			//}
 			(pThis as LevelManager).Invoke("InvokeWhenServiceIsWhateverItIs", 0.0f);
+			if ((pThis as LevelManager).m_bInvokeSucceeded)
+			{
+				Debug.Log("AbxrLib[MJPKotlinServiceExampleClient] - Ok, so here we are after invoke succeeded.  There should be one of these as we are returning from the thread right here.");
+				return;
+			}
 		}
 	}
 	private void CheckForCompletion()
