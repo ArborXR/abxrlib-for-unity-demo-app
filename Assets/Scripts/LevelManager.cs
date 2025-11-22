@@ -17,15 +17,15 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("AbxrLib - Assessment Start");
-        //Debug.Log("AbxrLib - WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
-        //Debug.Log("AbxrLib - DeviceId: " + Abxr.GetDeviceId());
-        //Debug.Log("AbxrLib - DeviceSerial: " + Abxr.GetDeviceSerial());
-        //Debug.Log("AbxrLib - DeviceTitle: " + Abxr.GetDeviceTitle());
-        // Debug.Log("AbxrLib - DeviceTags: " + Abxr.GetDeviceTags());
-        // Debug.Log("AbxrLib - OrgId: " + Abxr.GetOrgId());
-        // Debug.Log("AbxrLib - OrgTitle: " + Abxr.GetOrgTitle());
-        // Debug.Log("AbxrLib - OrgSlug: " + Abxr.GetOrgSlug());        
+        Debug.Log("LevelManager: Start()");
+        //Debug.Log("LevelManager: WhatTimeIsIt: " + Abxr.WhatTimeIsIt());
+        //Debug.Log("LevelManager: DeviceId: " + Abxr.GetDeviceId());
+        //Debug.Log("LevelManager: DeviceSerial: " + Abxr.GetDeviceSerial());
+        //Debug.Log("LevelManager: DeviceTitle: " + Abxr.GetDeviceTitle());
+        // Debug.Log("LevelManager: DeviceTags: " + Abxr.GetDeviceTags());
+        // Debug.Log("LevelManager: OrgId: " + Abxr.GetOrgId());
+        // Debug.Log("LevelManager: OrgTitle: " + Abxr.GetOrgTitle());
+        // Debug.Log("LevelManager: OrgSlug: " + Abxr.GetOrgSlug());        
 
         // Initialize Android deep link handler for external deep links (not moduleTarget)
         InitializeAndroidDeepLinkHandler();
@@ -70,12 +70,12 @@ public class LevelManager : MonoBehaviour
 
     private void CheckRunTime()
     {
-        Abxr.LogCritical("AbxrLib - Spending way too much time sorting fruit! This is not that hard a task!");
+        Abxr.LogCritical("LevelManager: CheckRunTime() - Spending way too much time sorting fruit! This is not that hard a task!");
     }
 
     private void TestCheck()
     {
-        Abxr.LogError("AbxrLib - Bad Luck, Description: We rolled the dice for fun and found you lost! This is mostly just for testing purposes.");
+        Abxr.LogError("LevelManager: TestCheck() - Bad Luck, Description: We rolled the dice for fun and found you lost! This is mostly just for testing purposes.");
     }
 
     private void InitializeGame()
@@ -88,7 +88,7 @@ public class LevelManager : MonoBehaviour
     public void CompleteTask(TargetLocation.CompletionData completionData)
     {
         Abxr.LogInfo("Placement Attempted");
-        Debug.Log("AbxrLib - Placement Attempted");
+        Debug.Log("LevelManager: CompleteTask() - Placement Attempted");
 
         if (completionData.usedType != completionData.targetType)
         {
@@ -117,7 +117,7 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Correct, "Correct spot", placementMetadata);
+            //Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Correct, "Correct spot", placementMetadata);
             //Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
