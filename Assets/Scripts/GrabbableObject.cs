@@ -33,7 +33,7 @@ public class GrabbableObject : MonoBehaviour
     /// </summary>
     public void HandleGrabEvent()
     {
-        Debug.Log("AbxrLib - Interaction Start");
+        Debug.Log("GrabbableObject: HandleGrabEvent() - Interaction Start");
         Abxr.EventInteractionStart($"place_item_{Id}");
         //Abxr.EventInteractionComplete is called in LevelManager.cs->CompleteTask()
     }

@@ -298,7 +298,7 @@ public class DesktopInputController : MonoBehaviour
                     disabledCount++;
                     if (!hasLoggedInitialDisable)
                     {
-                        Debug.Log($"[DesktopInputController] Disabled {provider.GetType().Name} on {provider.gameObject.name}");
+                        // Debug.Log($"[DesktopInputController] Disabled {provider.GetType().Name} on {provider.gameObject.name}");
                     }
                 }
             }
@@ -306,7 +306,7 @@ public class DesktopInputController : MonoBehaviour
             // Log summary on first run or if we disabled anything
             if (!hasLoggedInitialDisable || disabledCount > 0)
             {
-                Debug.Log($"[DesktopInputController] Locomotion provider check complete - disabled {disabledCount} components");
+                // Debug.Log($"[DesktopInputController] Locomotion provider check complete - disabled {disabledCount} components");
                 hasLoggedInitialDisable = true;
             }
         }

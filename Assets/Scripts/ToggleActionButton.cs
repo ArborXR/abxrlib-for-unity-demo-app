@@ -49,12 +49,12 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         Debug.Log($"ToggleActionButton - {secondActionName}");
               
         // For demonstration, let's log an Abxr interaction
-        Abxr.EventInteractionStart("toggle_button_second_action");
-        Abxr.EventInteractionComplete("toggle_button_second_action", "second_action", "Second action completed", Abxr.InteractionType.Text);
+        //Abxr.EventInteractionStart("toggle_button_second_action");
+        //Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
 
-        Debug.Log("AbxrLib - About to send assessment complete");
-        Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.ResultOptions.Pass);
-        Debug.Log("AbxrLib - Assessment complete sent, waiting before exit");
+        Debug.Log("ToggleActionButton: PerformSecondAction() - About to send assessment complete");
+        //Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.EventStatus.Pass);
+        Debug.Log("ToggleActionButton: PerformSecondAction() - Assessment complete sent, waiting before exit");
         
         // Wait a moment for the assessment to be sent before exiting
         StartCoroutine(ExitAfterDelay());
@@ -65,7 +65,7 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         // Wait 2 seconds to allow the assessment event to be sent
         yield return new WaitForSeconds(2f);
         
-        Debug.Log("AbxrLib - Exiting application");
+        Debug.Log("ToggleActionButton: ExitAfterDelay() - Exiting application");
         // Exit the app and return to launcher
         #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
