@@ -14,6 +14,8 @@ public class LevelManager : MonoBehaviour
     private int _totalTargets;
     private int _completedTargets;
     private const double passingScore = 70;
+	private System.Threading.Thread _thread = null;
+	private bool m_bInvokeSucceeded = false;
 
     private void Start()
     {
@@ -41,7 +43,6 @@ public class LevelManager : MonoBehaviour
         Abxr.OnModuleTarget += OnDeepLinkReceived;
         
         Abxr.EventAssessmentStart("stocking_training_unit_1");
-    }
 
 		// Set up authentication completion callback to log module information
 		//Abxr.OnAuthCompleted(OnAuthenticationCompleted);
