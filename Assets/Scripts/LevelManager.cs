@@ -48,26 +48,25 @@ public class LevelManager : MonoBehaviour
 		//Abxr.OnAuthCompleted(OnAuthenticationCompleted);
 		//See OnAuthenticationCompleted below for authentication completion callback
 		// ---
-		Debug.Log("AbxrLib[AbxrInsightServiceClient] - About to start the thread that is going to wait for service to be not null and then call whatTimeIsIt()");
-		_thread = new System.Threading.Thread(ThreadMain);
-		if (_thread != null)
-		{
-			Debug.Log("AbxrLib[AbxrInsightServiceClient] - The thread got created successfully, now let us start it.");
-			_thread.Start(this);
-		}
-		else
-		{
-			Debug.Log("AbxrLib[AbxrInsightServiceClient] - ERROR, the thread didn't start.");
-		}
+		//if (false)
+		//{
+		//	Debug.Log("AbxrLib[AbxrInsightServiceClient] - About to start the thread that is going to wait for service to be not null and then call whatTimeIsIt()");
+		//	_thread = new System.Threading.Thread(ThreadMain);
+		//	if (_thread != null)
+		//	{
+		//		Debug.Log("AbxrLib[AbxrInsightServiceClient] - The thread got created successfully, now let us start it.");
+		//		_thread.Start(this);
+		//	}
+		//	else
+		//	{
+		//		Debug.Log("AbxrLib[AbxrInsightServiceClient] - ERROR, the thread didn't start.");
+		//	}
+		//}
 	}
-	void InvokeWhenServiceIsThere()
-	{
-		Debug.Log("AbxrLib[AbxrInsightServiceClient] - SUCCESS, the service exists, going to call whatTimeIsIt() and then bail this thread... drumroll please, whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
-	}
-	void InvokeWhenServiceIsNull()
-	{
-		Debug.Log("AbxrLib[AbxrInsightServiceClient] - Abxr.IsServiceAvailable() returned false but there is a point where the service variable is indeed not null so let us call the bloody thing anyway... whatTimeIsIt() returned " + Abxr.WhatTimeIsIt());
-	}
+
+	/// <summary>
+	/// Test code.
+	/// </summary>
 	void InvokeWhenServiceIsWhateverItIs()
 	{
 		if (Abxr.ServiceIsFullyInitialized())
