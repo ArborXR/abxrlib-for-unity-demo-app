@@ -51,7 +51,7 @@ public class TargetLocation : MonoBehaviour
     {
         string jsonData = JsonUtility.ToJson(completionData);
         Abxr.LogInfo(jsonData);
-        Debug.Log(jsonData);
+        //Debug.Log(jsonData);
         if (!completionData.validPlacement || OnCompleted == null) return;
         isCompleted = true;
     }
