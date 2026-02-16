@@ -20,3 +20,7 @@ Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, au
 - **ArborInsightService:** On Android, when the ArborInsightService APK is installed and abxrlib-for-unity is built with the matching client AAR, the demo app (via the SDK) can bind to the service for auth and analytics. This repo does not build or ship the service or AAR; it only consumes them as supplied (e.g. from a distribution channel).
 
 Flow: **abxrlib-for-unity-demo-app** → uses **abxrlib-for-unity** → which can use the **ArborInsightService** (APK + client AAR) on device when available.
+
+### Maintaining this file
+
+Update this file when you make changes that affect the documented structure, dependencies, or how this demo uses abxrlib-for-unity and the device service. Keep the outline and details in sync with the project.
