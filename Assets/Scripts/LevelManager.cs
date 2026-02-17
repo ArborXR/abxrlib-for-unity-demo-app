@@ -214,18 +214,18 @@ public class LevelManager : MonoBehaviour
         }
         Debug.Log("=== AUTHENTICATION COMPLETED - SUCCESS ===");
 
-        var authData = AbxrLib.Runtime.Authentication.Authentication.GetAuthResponse();
+        var userData = Abxr.GetUserData();
 
         Debug.Log("=== AUTHENTICATION COMPLETED - USER INFORMATION ===");
-        if (authData.UserData != null)
+        if (userData != null)
         {
-            Debug.Log($"User - ID: {(authData.UserData.ContainsKey("id") ? authData.UserData["id"] : "Not provided")}");
-            Debug.Log($"User - Name: {(authData.UserData.ContainsKey("name") ? authData.UserData["name"] : "Not provided")}");
-            Debug.Log($"User - user_id: {(authData.UserData.ContainsKey("user_id") ? authData.UserData["user_id"] : "Not provided")}");
-            Debug.Log($"User - Email: {(authData.UserData.ContainsKey("email") ? authData.UserData["email"] : "Not provided")}");
-            Debug.Log($"User ID: {(authData.UserData.ContainsKey("userId") ? authData.UserData["userId"] : "Not provided")}");
-            Debug.Log($"App ID: {(authData.UserData.ContainsKey("appId") ? authData.UserData["appId"] : "Not provided")}");
-            Debug.Log($"Package Name: {(authData.UserData.ContainsKey("packageName") ? authData.UserData["packageName"] : "Not provided")}");
+            Debug.Log($"User - ID: {(userData.ContainsKey("id") ? userData["id"] : "Not provided")}");
+            Debug.Log($"User - Name: {(userData.ContainsKey("name") ? userData["name"] : "Not provided")}");
+            Debug.Log($"User - user_id: {(userData.ContainsKey("user_id") ? userData["user_id"] : "Not provided")}");
+            Debug.Log($"User - Email: {(userData.ContainsKey("email") ? userData["email"] : "Not provided")}");
+            Debug.Log($"User ID: {(userData.ContainsKey("userId") ? userData["userId"] : "Not provided")}");
+            Debug.Log($"App ID: {(userData.ContainsKey("appId") ? userData["appId"] : "Not provided")}");
+            Debug.Log($"Package Name: {(userData.ContainsKey("packageName") ? userData["packageName"] : "Not provided")}");
         }
         else
         {
@@ -233,11 +233,14 @@ public class LevelManager : MonoBehaviour
         }
         Debug.Log("=== AUTHENTICATION COMPLETED ===");
         Debug.Log("=== MODULE INFORMATION ===");
-        
-        if (authData.Modules == null || authData.Modules.Count == 0)
+
+        var modules = Abxr.GetModuleList();
+        if (modules == null || modules.Count == 0)
         {
             Debug.Log("No modules defined.");
-        } else {
+        }
+        else
+        {
             Debug.Log("Modules defined, will execute next.");
         }
         Debug.Log("=== END MODULE INFORMATION ===");
