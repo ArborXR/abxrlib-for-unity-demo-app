@@ -6,7 +6,7 @@ This repo is a **Unity demo application** that shows how to use the ABXRLib SDK 
 
 ## This repo: Demo app for AbxrLib (Unity)
 
-Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, auth, telemetry, UI, and (on Android) optional use of **ArborInsightService**.
+Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, auth, telemetry, UI, and (on Android) optional use of **ArborInsightsClient**.
 
 ### Project setup
 
@@ -16,10 +16,10 @@ Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, au
 
 ### How it uses other projects
 
-- **abxrlib-for-unity:** This demo **depends on** the AbxrLib Unity package. It uses the SDK for analytics, authentication, and (on Android) optional communication with the ArborInsightService. Setup and integration details are in **abxrlib-for-unity** (README and that repo’s `AGENTS.md`).
-- **ArborInsightService:** On Android, when the ArborInsightService APK is installed and abxrlib-for-unity is built with the matching client AAR, the demo app (via the SDK) can bind to the service for auth and analytics. This repo does not build or ship the service or AAR; it only consumes them as supplied (e.g. from a distribution channel).
+- **abxrlib-for-unity:** This demo **depends on** the AbxrLib Unity package. It uses the SDK for analytics, authentication, and (on Android) optional communication with the ArborInsightsClient. Setup and integration details are in **abxrlib-for-unity** (README and that repo’s `AGENTS.md`).
+- **ArborInsightsClient:** On Android, when the ArborInsightsClient APK is installed and abxrlib-for-unity is built with the matching client AAR, the demo app (via the SDK) can bind to the service for auth and analytics. This repo does not build or ship the service or AAR; it only consumes them as supplied (e.g. from a distribution channel).
 
-Flow: **abxrlib-for-unity-demo-app** → uses **abxrlib-for-unity** → which can use the **ArborInsightService** (APK + client AAR) on device when available.
+Flow: **abxrlib-for-unity-demo-app** → uses **abxrlib-for-unity** → which can use the **ArborInsightsClient** (APK + client AAR) on device when available.
 
 ### Maintaining this file
 

@@ -54,6 +54,8 @@ public class DesktopInputController : MonoBehaviour
     private float lastLocomotionDisableTime = 0f;
     private const float LOCOMOTION_DISABLE_INTERVAL = 5f; // Check every 5 seconds (less frequent now that it's working)
     private bool hasLoggedInitialDisable = false;
+
+    private static bool s_hasLoggedSetupComplete;
     
     // Interaction state
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
@@ -127,6 +129,8 @@ public class DesktopInputController : MonoBehaviour
     
     private void SetupComponents()
     {
+        if (setupComplete)
+            return;
         // Platform-specific component setup
         if (Application.platform == RuntimePlatform.WebGLPlayer)
         {
@@ -210,7 +214,11 @@ public class DesktopInputController : MonoBehaviour
                 currentPitch -= 360f;
         }
         
-        Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
+        if (!s_hasLoggedSetupComplete)
+        {
+            s_hasLoggedSetupComplete = true;
+            Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
+        }
         
         // Do initial locomotion disable
         DisableAllLocomotionProviders();
@@ -885,6 +893,7 @@ public class DesktopInputController : MonoBehaviour
     
     private void OnDestroy()
     {
+        s_hasLoggedSetupComplete = false;
         // Restore cursor state
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
