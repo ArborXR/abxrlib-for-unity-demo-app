@@ -56,7 +56,8 @@ public class DesktopInputController : MonoBehaviour
     private bool hasLoggedInitialDisable = false;
 
     private static bool s_hasLoggedSetupComplete;
-    
+    private static bool s_hasReEnabledLocomotionOnDestroy;
+
     // Interaction state
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable currentSimpleInteractable;
@@ -898,9 +899,10 @@ public class DesktopInputController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         
-        // Re-enable ALL locomotion providers that we disabled (VR/Desktop only)
-        if (Application.platform != RuntimePlatform.WebGLPlayer)
+        // Re-enable locomotion providers only once (avoid duplicate logs when multiple instances exist)
+        if (Application.platform != RuntimePlatform.WebGLPlayer && !s_hasReEnabledLocomotionOnDestroy)
         {
+            s_hasReEnabledLocomotionOnDestroy = true;
             try
             {
                 Debug.Log("[DesktopInputController] Re-enabling locomotion providers on destroy");

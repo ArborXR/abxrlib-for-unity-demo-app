@@ -214,6 +214,11 @@ public class LevelManager : MonoBehaviour
         }
         Debug.Log("=== AUTHENTICATION COMPLETED - SUCCESS ===");
 
+        //var authResponse = Abxr.GetAuthResponse();
+        //Debug.Log("=== AUTHENTICATION COMPLETED - AUTH RESPONSE ===");
+        //Debug.Log("Auth Response: " + JsonConvert.SerializeObject(authResponse));
+        //Debug.Log("=== AUTHENTICATION COMPLETED ===");
+
         var userData = Abxr.GetUserData();
 
         Debug.Log("=== AUTHENTICATION COMPLETED - USER INFORMATION ===");
