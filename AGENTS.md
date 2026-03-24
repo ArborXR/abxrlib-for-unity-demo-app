@@ -14,6 +14,10 @@ Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, au
 - **Prerequisites:** Unity 2022.3 LTS or later; AbxrLib SDK (abxrlib-for-unity) installed as a package.
 - **Scenes / usage:** See README and `Assets/Scenes/` (e.g. TrainingDemo.unity). Run in editor or build to Android/WebGL.
 
+### Android XR vendors (single `multi` branch)
+
+Use **Build Profiles** `Android_Meta`, `Android_Pico`, `Android_HTC` (under `Assets/Settings/Build Profiles/`) together with **ArborXR → Android XR Target** to apply OpenXR toggles, `Resources/XrAndroidTargetConfig`, and Android scripting defines (`ABXR_ANDROID_TARGET_*`). Legacy branches `main` / `pico` / `htc` are superseded by this workflow; see README for CI (`XR_TARGET`, `AbxrAndroidCiBuild.BuildFromEnvironment`).
+
 ### How it uses other projects
 
 - **abxrlib-for-unity:** This demo **depends on** the AbxrLib Unity package. It uses the SDK for analytics, authentication, and (on Android) optional communication with the ArborInsightsClient. Setup and integration details are in **abxrlib-for-unity** (README and that repo’s `AGENTS.md`).

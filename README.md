@@ -47,6 +47,25 @@ The project includes various prefabs, scenes, and scripts that demonstrate best 
    # Deploy to Android device via ADB or direct installation
    ```
 
+### Android XR targets (Meta Quest, PICO, HTC VIVE)
+
+This branch uses **Unity 6 Build Profiles** (`Android_Meta`, `Android_Pico`, `Android_HTC`) plus Editor tooling:
+
+1. **Apply vendor settings** (manifest guard, OpenXR feature toggles, Android scripting defines, `Resources/XrAndroidTargetConfig`):
+   - Menu: **ArborXR → Android XR Target →** Meta (Quest), Pico, or HTC (VIVE).
+
+2. **Build Profiles**: Use **File → Build Profiles** and pick the profile that matches the device. Run **Apply** above when switching vendors so OpenXR and defines stay aligned.
+
+3. **CI / batchmode** (optional):
+   ```bash
+   Unity -batchmode -quit -projectPath . \
+     -executeMethod AbxrAndroidCiBuild.BuildFromEnvironment \
+     -logFile build.log
+   ```
+   Set `XR_TARGET` to `meta`, `pico`, or `htc`. Optional: `ABXR_BUILD_OUTPUT_DIR`, `ABXR_BUILD_NAME` for the output APK path.
+
+4. **Merged OpenXR settings**: `Assets/XR/Settings/Open XR Package Settings.asset` combines PICO- and VIVE-specific features; the Apply menu enables/disables vendor blocks for the active target. Re-merging from branches can be done with `Tools/merge_openxr_package_settings.py` if needed.
+
 ## How to Test
 
 ### Unity Editor Testing

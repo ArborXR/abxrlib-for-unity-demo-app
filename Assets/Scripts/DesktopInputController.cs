@@ -54,7 +54,10 @@ public class DesktopInputController : MonoBehaviour
     private float lastLocomotionDisableTime = 0f;
     private const float LOCOMOTION_DISABLE_INTERVAL = 5f; // Check every 5 seconds (less frequent now that it's working)
     private bool hasLoggedInitialDisable = false;
-    
+
+    private static bool s_hasLoggedSetupComplete;
+    private static bool s_hasReEnabledLocomotionOnDestroy;
+
     // Interaction state
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable currentGrabbedObject;
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable currentSimpleInteractable;
@@ -127,6 +130,8 @@ public class DesktopInputController : MonoBehaviour
     
     private void SetupComponents()
     {
+        if (setupComplete)
+            return;
         // Platform-specific component setup
         if (Application.platform == RuntimePlatform.WebGLPlayer)
         {
@@ -210,7 +215,11 @@ public class DesktopInputController : MonoBehaviour
                 currentPitch -= 360f;
         }
         
-        Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
+        if (!s_hasLoggedSetupComplete)
+        {
+            s_hasLoggedSetupComplete = true;
+            Debug.Log($"DesktopInputController: Setup complete - Desktop controls enabled (VR Active: {IsVRHeadsetActive()})");
+        }
         
         // Do initial locomotion disable
         DisableAllLocomotionProviders();
@@ -885,13 +894,15 @@ public class DesktopInputController : MonoBehaviour
     
     private void OnDestroy()
     {
+        s_hasLoggedSetupComplete = false;
         // Restore cursor state
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         
-        // Re-enable ALL locomotion providers that we disabled (VR/Desktop only)
-        if (Application.platform != RuntimePlatform.WebGLPlayer)
+        // Re-enable locomotion providers only once (avoid duplicate logs when multiple instances exist)
+        if (Application.platform != RuntimePlatform.WebGLPlayer && !s_hasReEnabledLocomotionOnDestroy)
         {
+            s_hasReEnabledLocomotionOnDestroy = true;
             try
             {
                 Debug.Log("[DesktopInputController] Re-enabling locomotion providers on destroy");
