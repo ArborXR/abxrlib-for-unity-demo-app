@@ -32,9 +32,6 @@ public static class AutoSceneValidator
             // Longer delay to ensure Unity is fully ready for serialization changes
             EditorApplication.delayCall += () => {
                 EditorApplication.delayCall += () => {
-                    // Do not run during Play Mode (e.g. PlayMode tests); EditorSceneManager is not allowed then
-                    if (Application.isPlaying)
-                        return;
                     // Load Level scene as default if no scene is currently open or if a different scene is open
                     LoadDefaultScene();
                     //Debug.Log("AutoSceneValidator: Unity startup - checking for missing script issues...");
@@ -46,8 +43,6 @@ public static class AutoSceneValidator
 
     private static void LoadDefaultScene()
     {
-        if (Application.isPlaying)
-            return;
         try
         {
             string levelScenePath = "Assets/Scenes/Level.unity";
@@ -80,8 +75,6 @@ public static class AutoSceneValidator
 
     private static void OnSceneOpened(Scene scene, OpenSceneMode mode)
     {
-        if (Application.isPlaying)
-            return;
         Debug.Log($"AutoSceneValidator: Scene '{scene.name}' opened - validating...");
         EditorApplication.delayCall += () => ValidateCurrentScene();
     }
