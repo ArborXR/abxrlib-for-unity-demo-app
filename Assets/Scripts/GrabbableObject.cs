@@ -8,6 +8,7 @@ public class GrabbableObject : MonoBehaviour
     public string Id { get; private set; }
 
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable _grabInteractable;
+    private int _lastReleaseFrame = -1; // Track the last frame HandleReleaseEvent was called to prevent duplicate calls
 
     private void Awake()
     {
@@ -19,6 +20,7 @@ public class GrabbableObject : MonoBehaviour
             if (_grabInteractable != null)
             {
                 _grabInteractable.selectEntered.AddListener(OnGrab);
+                _grabInteractable.selectExited.AddListener(OnRelease);
             }
         }
     }
@@ -28,6 +30,11 @@ public class GrabbableObject : MonoBehaviour
         HandleGrabEvent();
     }
 
+    private void OnRelease(SelectExitEventArgs args)
+    {
+        HandleReleaseEvent();
+    }
+
     /// <summary>
     /// Public method to handle grab events - can be called from both VR and desktop input systems
     /// </summary>
@@ -35,7 +42,32 @@ public class GrabbableObject : MonoBehaviour
     {
         Debug.Log("GrabbableObject: HandleGrabEvent() - Interaction Start");
         Abxr.EventInteractionStart($"place_item_{Id}");
+        
+        // Disable the Dropper's AbxrTarget when an item is picked up
+        // Uses the target's display name "Dropper" to find and disable it
+        //Abxr.TargetDisable("Dropper");
         //Abxr.EventInteractionComplete is called in LevelManager.cs->CompleteTask()
+    }
+
+    /// <summary>
+    /// Handles release/drop events - re-enables the Dropper's AbxrTarget when item is dropped
+    /// Note: TargetLocation.OnRelease() also re-enables it, but this ensures it happens even if
+    /// the item is dropped away from any target location
+    /// </summary>
+    private void HandleReleaseEvent()
+    {
+        // Prevent duplicate calls in the same frame (can happen if listeners are registered multiple times)
+        if (_lastReleaseFrame == Time.frameCount)
+        {
+            return;
+        }
+        _lastReleaseFrame = Time.frameCount;
+        
+        // Re-enable the Dropper's AbxrTarget when item is dropped/released
+        // Uses the target's display name "Dropper" to find and enable it
+        // This is a backup in case the item is dropped away from any TargetLocation
+        Abxr.Event("Dropped item", transform.position);
+        //Abxr.TargetEnable("Dropper");
     }
 
     private void OnDestroy()
@@ -43,6 +75,7 @@ public class GrabbableObject : MonoBehaviour
         if (Application.platform != RuntimePlatform.WebGLPlayer && _grabInteractable != null)
         {
             _grabInteractable.selectEntered.RemoveListener(OnGrab);
+            _grabInteractable.selectExited.RemoveListener(OnRelease);
         }
     }
 
@@ -51,6 +84,7 @@ public class GrabbableObject : MonoBehaviour
         if (Application.platform != RuntimePlatform.WebGLPlayer && _grabInteractable != null)
         {
             _grabInteractable.selectEntered.RemoveListener(OnGrab);
+            _grabInteractable.selectExited.RemoveListener(OnRelease);
         }
     }
 
@@ -58,7 +92,13 @@ public class GrabbableObject : MonoBehaviour
     {
         if (Application.platform != RuntimePlatform.WebGLPlayer && _grabInteractable != null)
         {
+            // Remove listeners first to prevent duplicates if OnEnable is called multiple times
+            _grabInteractable.selectEntered.RemoveListener(OnGrab);
+            _grabInteractable.selectExited.RemoveListener(OnRelease);
+            
+            // Then add listeners
             _grabInteractable.selectEntered.AddListener(OnGrab);
+            _grabInteractable.selectExited.AddListener(OnRelease);
         }
     }
 }
