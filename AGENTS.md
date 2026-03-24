@@ -16,7 +16,7 @@ Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, au
 
 ### Android XR vendors (single `multi` branch)
 
-Use **Build Profiles** `Android_Meta`, `Android_Pico`, `Android_HTC` (under `Assets/Settings/Build Profiles/`) together with **ArborXR → Android XR Target** to apply OpenXR toggles, `Resources/XrAndroidTargetConfig`, and Android scripting defines (`ABXR_ANDROID_TARGET_*`). Legacy branches `main` / `pico` / `htc` are superseded by this workflow; see README for CI (`XR_TARGET`, `AbxrAndroidCiBuild.BuildFromEnvironment`).
+Use **Build Profiles** `Android_Meta`, `Android_Pico`, `Android_HTC` (under `Assets/Settings/Build Profiles/`) together with **XRBuildTools → Android XR Target** to apply OpenXR toggles, `Resources/XrAndroidTargetConfig`, and Android scripting defines (`ABXR_ANDROID_TARGET_*`). Legacy branches `main` / `pico` / `htc` are superseded by this workflow; see README for CI (`XR_TARGET`, `AbxrAndroidCiBuild.BuildFromEnvironment`).
 
 ### How it uses other projects
 

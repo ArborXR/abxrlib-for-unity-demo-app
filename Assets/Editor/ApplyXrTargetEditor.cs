@@ -24,13 +24,13 @@ public static class ApplyXrTargetEditor
     static readonly string ManifestPath = Path.Combine("Packages", "manifest.json");
     static readonly string ConfigResourcePath = Path.Combine("Assets", "Resources", "XrAndroidTargetConfig.asset");
 
-    [MenuItem("ArborXR/Android XR Target/Meta (Quest)")]
+    [MenuItem("XRBuildTools/Android XR Target/Meta (Quest)")]
     public static void ApplyMeta() => Apply(XrAndroidTargetConfig.Vendor.Meta);
 
-    [MenuItem("ArborXR/Android XR Target/Pico")]
+    [MenuItem("XRBuildTools/Android XR Target/Pico")]
     public static void ApplyPico() => Apply(XrAndroidTargetConfig.Vendor.Pico);
 
-    [MenuItem("ArborXR/Android XR Target/HTC (VIVE)")]
+    [MenuItem("XRBuildTools/Android XR Target/HTC (VIVE)")]
     public static void ApplyHtc() => Apply(XrAndroidTargetConfig.Vendor.Htc);
 
     public static void Apply(XrAndroidTargetConfig.Vendor vendor)
@@ -46,7 +46,7 @@ public static class ApplyXrTargetEditor
         cfg.activeVendor = vendor;
         EditorUtility.SetDirty(cfg);
 
-        EnsureVivePackageInManifest();
+        SyncVivePackageInManifest(vendor == XrAndroidTargetConfig.Vendor.Htc);
         ToggleOpenXrYamlFeatures(vendor);
         SetAndroidScriptingDefines(vendor);
 
@@ -56,21 +56,53 @@ public static class ApplyXrTargetEditor
     }
 
     /// <summary>
-    /// Merged OpenXR settings reference VIVE features; keep the UPM entry so the project resolves. Optional CI may strip it for Meta-only builds (advanced).
+    /// Adds or removes the VIVE OpenXR UPM line. When adding, inserts immediately after the <c>com.arborxr.unity</c> dependency line (any source: git, local path, etc.).
+    /// HTC target includes the package; Meta/Pico remove it so local abxrlib paths and non-HTC workflows stay valid.
     /// </summary>
-    public static void EnsureVivePackageInManifest()
+    public static void SyncVivePackageInManifest(bool includeVive)
     {
         var full = Path.GetFullPath(ManifestPath);
         if (!File.Exists(full))
             return;
-        var text = File.ReadAllText(full);
-        if (text.Contains($"\"{VivePackageId}\"", StringComparison.Ordinal))
+
+        var lines = File.ReadAllLines(full).ToList();
+        lines.RemoveAll(l => IsViveManifestLine(l));
+
+        if (!includeVive)
+        {
+            File.WriteAllLines(full, lines);
             return;
-        text = text.Replace(
-            "\"com.arborxr.unity\": \"https://github.com/ArborXR/abxrlib-for-unity.git\",",
-            "\"com.arborxr.unity\": \"https://github.com/ArborXR/abxrlib-for-unity.git\",\n" + VivePackageLine);
-        File.WriteAllText(full, text);
+        }
+
+        var insertAt = -1;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            if (lines[i].Contains("\"com.arborxr.unity\"", StringComparison.Ordinal))
+            {
+                insertAt = i + 1;
+                break;
+            }
+        }
+
+        if (insertAt < 0)
+        {
+            Debug.LogWarning("[ApplyXrTarget] Packages/manifest.json has no \"com.arborxr.unity\" dependency; cannot insert VIVE OpenXR package.");
+            File.WriteAllLines(full, lines);
+            return;
+        }
+
+        lines.Insert(insertAt, VivePackageLine);
+        File.WriteAllLines(full, lines);
     }
+
+    static bool IsViveManifestLine(string line)
+    {
+        var t = line.TrimStart();
+        return t.StartsWith($"\"{VivePackageId}\"", StringComparison.Ordinal);
+    }
+
+    /// <summary>Backward-compatible alias: ensures VIVE is present (HTC-style).</summary>
+    public static void EnsureVivePackageInManifest() => SyncVivePackageInManifest(true);
 
     static void ToggleOpenXrYamlFeatures(XrAndroidTargetConfig.Vendor vendor)
     {

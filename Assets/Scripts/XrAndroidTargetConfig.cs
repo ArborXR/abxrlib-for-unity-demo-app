@@ -2,9 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// Build-time and runtime Android XR vendor (Meta Quest OpenXR, PICO OpenXR, HTC VIVE OpenXR).
-/// The asset at Resources/XrAndroidTargetConfig is updated by ArborXR/Apply Android XR Target (Editor) and read at runtime for PICO-specific rig fixes.
+/// The asset at Resources/XrAndroidTargetConfig is updated by XRBuildTools/Apply Android XR Target (Editor) and read at runtime for PICO-specific rig fixes.
 /// </summary>
-[CreateAssetMenu(fileName = "XrAndroidTargetConfig", menuName = "ArborXR/Android XR Target Config")]
+[CreateAssetMenu(fileName = "XrAndroidTargetConfig", menuName = "XRBuildTools/Android XR Target Config")]
 public class XrAndroidTargetConfig : ScriptableObject
 {
     public enum Vendor

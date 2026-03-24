@@ -52,7 +52,7 @@ The project includes various prefabs, scenes, and scripts that demonstrate best 
 This branch uses **Unity 6 Build Profiles** (`Android_Meta`, `Android_Pico`, `Android_HTC`) plus Editor tooling:
 
 1. **Apply vendor settings** (manifest guard, OpenXR feature toggles, Android scripting defines, `Resources/XrAndroidTargetConfig`):
-   - Menu: **ArborXR → Android XR Target →** Meta (Quest), Pico, or HTC (VIVE).
+   - Menu: **XRBuildTools → Android XR Target →** Meta (Quest), Pico, or HTC (VIVE).
 
 2. **Build Profiles**: Use **File → Build Profiles** and pick the profile that matches the device. Run **Apply** above when switching vendors so OpenXR and defines stay aligned.
 
