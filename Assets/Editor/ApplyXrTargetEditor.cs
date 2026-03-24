@@ -5,11 +5,12 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Build.Profile;
 using UnityEngine;
 
 /// <summary>
-/// Applies Android XR vendor selection: Resources config, optional VIVE UPM line, OpenXR YAML feature toggles, and Android scripting defines.
-/// Pair with Unity 6 Build Profiles named Android_Meta, Android_Pico, Android_HTC.
+/// Applies Android XR vendor selection: Resources config, optional VIVE UPM line, OpenXR YAML feature toggles, Android scripting defines,
+/// and (Unity 6) the active Build Profile under <c>Assets/Settings/Build Profiles/</c>.
 /// </summary>
 public static class ApplyXrTargetEditor
 {
@@ -23,6 +24,10 @@ public static class ApplyXrTargetEditor
     static readonly string OpenXrSettingsPath = Path.Combine("Assets", "XR", "Settings", "Open XR Package Settings.asset");
     static readonly string ManifestPath = Path.Combine("Packages", "manifest.json");
     static readonly string ConfigResourcePath = Path.Combine("Assets", "Resources", "XrAndroidTargetConfig.asset");
+
+    const string BuildProfileMetaPath = "Assets/Settings/Build Profiles/Android_Meta.asset";
+    const string BuildProfilePicoPath = "Assets/Settings/Build Profiles/Android_Pico.asset";
+    const string BuildProfileHtcPath = "Assets/Settings/Build Profiles/Android_HTC.asset";
 
     [MenuItem("XRBuildTools/Android XR Target/Meta (Quest)")]
     public static void ApplyMeta() => Apply(XrAndroidTargetConfig.Vendor.Meta);
@@ -49,10 +54,11 @@ public static class ApplyXrTargetEditor
         SyncVivePackageInManifest(vendor == XrAndroidTargetConfig.Vendor.Htc);
         ToggleOpenXrYamlFeatures(vendor);
         SetAndroidScriptingDefines(vendor);
+        TrySetActiveBuildProfile(vendor);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Review Packages/manifest and OpenXR settings; resolve packages if prompted.");
+        Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Build Profile, Packages/manifest, and OpenXR settings updated; resolve packages if prompted.");
     }
 
     /// <summary>
@@ -103,6 +109,28 @@ public static class ApplyXrTargetEditor
 
     /// <summary>Backward-compatible alias: ensures VIVE is present (HTC-style).</summary>
     public static void EnsureVivePackageInManifest() => SyncVivePackageInManifest(true);
+
+    static void TrySetActiveBuildProfile(XrAndroidTargetConfig.Vendor vendor)
+    {
+        var path = vendor switch
+        {
+            XrAndroidTargetConfig.Vendor.Meta => BuildProfileMetaPath,
+            XrAndroidTargetConfig.Vendor.Pico => BuildProfilePicoPath,
+            XrAndroidTargetConfig.Vendor.Htc => BuildProfileHtcPath,
+            _ => null
+        };
+        if (path == null)
+            return;
+
+        var profile = AssetDatabase.LoadAssetAtPath<BuildProfile>(path);
+        if (profile == null)
+        {
+            Debug.LogWarning("[ApplyXrTarget] Build Profile missing at " + path + ". Expected Unity 6 assets Android_Meta / Android_Pico / Android_HTC under Assets/Settings/Build Profiles.");
+            return;
+        }
+
+        BuildProfile.SetActiveBuildProfile(profile);
+    }
 
     static void ToggleOpenXrYamlFeatures(XrAndroidTargetConfig.Vendor vendor)
     {
