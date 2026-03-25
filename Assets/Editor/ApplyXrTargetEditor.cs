@@ -159,8 +159,22 @@ public static class ApplyXrTargetEditor
                 continue;
             }
 
-            // Meta Quest Android: on for Meta only; off for Pico/HTC to avoid duplicate OpenXR extensions with VIVE/PICO.
-            if (IsMetaQuestAndroidFeatureBlock(block))
+            // Meta Android: Unity 6 deprecates OculusQuestFeature — keep it off; use MetaQuestFeature Android for Quest builds.
+            if (IsDeprecatedOculusQuestAndroidBlock(block))
+            {
+                parts[i] = SetFirstMEnabledInBlock(block, false);
+                continue;
+            }
+
+            if (IsMetaQuestFeatureAndroidBlock(block))
+            {
+                var metaOn = vendor == XrAndroidTargetConfig.Vendor.Meta;
+                parts[i] = SetFirstMEnabledInBlock(block, metaOn);
+                continue;
+            }
+
+            // Meta Quest touch/controller Android features: on for Meta only; off for Pico/HTC.
+            if (IsMetaQuestAndroidAuxiliaryBlock(block))
             {
                 var metaOn = vendor == XrAndroidTargetConfig.Vendor.Meta;
                 parts[i] = SetFirstMEnabledInBlock(block, metaOn);
@@ -206,14 +220,32 @@ public static class ApplyXrTargetEditor
         return block.Contains("ViveSecondaryViewConfiguration", StringComparison.Ordinal);
     }
 
-    static bool IsMetaQuestAndroidFeatureBlock(string block)
+    static bool IsDeprecatedOculusQuestAndroidBlock(string block)
     {
         if (!block.Contains("Android", StringComparison.Ordinal))
             return false;
         return block.Contains("OculusQuestFeature", StringComparison.Ordinal)
-               || block.Contains("com.unity.openxr.feature.oculusquest", StringComparison.Ordinal)
-               || block.Contains("com.unity.openxr.feature.input.metaquest", StringComparison.Ordinal)
-               || block.Contains("OculusTouchControllerProfile Android", StringComparison.Ordinal);
+               || block.Contains("com.unity.openxr.feature.oculusquest", StringComparison.Ordinal);
+    }
+
+    static bool IsMetaQuestFeatureAndroidBlock(string block)
+    {
+        return block.Contains("MetaQuestFeature Android", StringComparison.Ordinal)
+               || (block.Contains("Android", StringComparison.Ordinal)
+                   && block.Contains("featureIdInternal: com.unity.openxr.feature.metaquest", StringComparison.Ordinal)
+                   && !block.Contains("oculusquest", StringComparison.Ordinal));
+    }
+
+    static bool IsMetaQuestAndroidAuxiliaryBlock(string block)
+    {
+        if (!block.Contains("Android", StringComparison.Ordinal))
+            return false;
+        if (block.Contains("OculusQuestFeature", StringComparison.Ordinal)
+            || block.Contains("MetaQuestFeature Android", StringComparison.Ordinal))
+            return false;
+        return block.Contains("OculusTouchControllerProfile Android", StringComparison.Ordinal)
+               || block.Contains("MetaQuestTouchPlusControllerProfile Android", StringComparison.Ordinal)
+               || block.Contains("MetaQuestTouchProControllerProfile Android", StringComparison.Ordinal);
     }
 
     static string SetEveryMEnabledInBlock(string block, bool enabled)
