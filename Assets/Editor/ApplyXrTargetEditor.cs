@@ -146,6 +146,27 @@ public static class ApplyXrTargetEditor
             if (string.IsNullOrEmpty(block) || !block.StartsWith("--- !u!114", StringComparison.Ordinal))
                 continue;
 
+            // VIVE: Spectator Camera off ↔ First Person Observer off (ViveSpectatorCameraProcess). Handle before generic VIVE toggle.
+            if (IsViveFirstPersonObserverBlock(block))
+            {
+                parts[i] = SetEveryMEnabledInBlock(block, false);
+                continue;
+            }
+
+            if (IsViveSpectatorSecondaryViewBlock(block))
+            {
+                parts[i] = SetFirstMEnabledInBlock(block, false);
+                continue;
+            }
+
+            // Meta Quest Android: on for Meta only; off for Pico/HTC to avoid duplicate OpenXR extensions with VIVE/PICO.
+            if (IsMetaQuestAndroidFeatureBlock(block))
+            {
+                var metaOn = vendor == XrAndroidTargetConfig.Vendor.Meta;
+                parts[i] = SetFirstMEnabledInBlock(block, metaOn);
+                continue;
+            }
+
             var pico = IsPicoOpenXrBlock(block);
             var vive = IsViveOpenXrBlock(block);
             if (!pico && !vive)
@@ -172,6 +193,38 @@ public static class ApplyXrTargetEditor
     static bool IsViveOpenXrBlock(string block)
     {
         return block.Contains("VIVE.OpenXR::", StringComparison.Ordinal);
+    }
+
+    static bool IsViveFirstPersonObserverBlock(string block)
+    {
+        return block.Contains("ViveFirstPersonObserver", StringComparison.Ordinal)
+               || block.Contains("FirstPersonObserver.ViveFirstPersonObserver", StringComparison.Ordinal);
+    }
+
+    static bool IsViveSpectatorSecondaryViewBlock(string block)
+    {
+        return block.Contains("ViveSecondaryViewConfiguration", StringComparison.Ordinal);
+    }
+
+    static bool IsMetaQuestAndroidFeatureBlock(string block)
+    {
+        if (!block.Contains("Android", StringComparison.Ordinal))
+            return false;
+        return block.Contains("OculusQuestFeature", StringComparison.Ordinal)
+               || block.Contains("com.unity.openxr.feature.oculusquest", StringComparison.Ordinal)
+               || block.Contains("com.unity.openxr.feature.input.metaquest", StringComparison.Ordinal)
+               || block.Contains("OculusTouchControllerProfile Android", StringComparison.Ordinal);
+    }
+
+    static string SetEveryMEnabledInBlock(string block, bool enabled)
+    {
+        var val = enabled ? "1" : "0";
+        return Regex.Replace(
+            block,
+            @"^(\s*m_enabled:\s*)(0|1)\s*$",
+            m => $"{m.Groups[1]}{val}",
+            RegexOptions.Multiline,
+            TimeSpan.FromSeconds(2));
     }
 
     static string SetFirstMEnabledInBlock(string block, bool enabled)
