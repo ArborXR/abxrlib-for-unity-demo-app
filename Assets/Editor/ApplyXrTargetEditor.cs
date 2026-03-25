@@ -45,7 +45,10 @@ public static class ApplyXrTargetEditor
     [MenuItem("XRBuildTools/Android XR Target/HTC (VIVE)")]
     public static void ApplyHtc() => Apply(XrAndroidTargetConfig.Vendor.Htc);
 
-    /// <summary>Copies baseline → active OpenXR settings without changing vendor (use after editing <c>Open XR Package Settings.baseline.asset</c>).</summary>
+    /// <summary>
+    /// Copies baseline → active OpenXR settings, re-applies YAML toggles, Android scripting defines, and the Unity 6 Build Profile
+    /// for <see cref="XrAndroidTargetConfig.activeVendor"/> without changing the selected vendor (use after editing the baseline asset).
+    /// </summary>
     [MenuItem("XRBuildTools/Android XR Target/Restore OpenXR from baseline (keep current vendor)")]
     public static void RestoreOpenXrFromBaselineMenu()
     {
@@ -59,10 +62,14 @@ public static class ApplyXrTargetEditor
         if (!TryRestoreOpenXrFromBaseline())
             return;
 
-        ToggleOpenXrYamlFeatures(cfg.activeVendor);
+        var v = cfg.activeVendor;
+        ToggleOpenXrYamlFeatures(v);
+        SetAndroidScriptingDefines(v);
+        TrySetActiveBuildProfile(v);
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline and re-applied toggles for vendor = {cfg.activeVendor}.");
+        Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline; toggles, defines, and Build Profile re-applied for vendor = {v}.");
     }
 
     public static void Apply(XrAndroidTargetConfig.Vendor vendor)
@@ -163,6 +170,22 @@ public static class ApplyXrTargetEditor
                 continue;
             }
 
+            // VIVE Android: VivePassthrough and ViveCompositionLayerPassthrough both register XR_HTC_passthrough; Unity OpenXR
+            // validation fails if both are enabled. Keep VivePassthrough; the Composition Layer feature is deprecated.
+            if (IsViveCompositionLayerPassthroughAndroidBlock(block))
+            {
+                parts[i] = SetFirstMEnabledInBlock(block, false);
+                continue;
+            }
+
+            // Merged OpenXR YAML can contain duplicate VIVE features (same featureIdInternal) where one copy lost its MonoScript
+            // (m_Script: {fileID: 0}). Enabling both fails OpenXR project validation ("duplicate OpenXR extensions").
+            if (IsViveOpenXrBlockWithMissingMonoScript(block))
+            {
+                parts[i] = SetFirstMEnabledInBlock(block, false);
+                continue;
+            }
+
             // Meta Android: Unity 6 deprecates OculusQuestFeature — keep it off; use MetaQuestFeature Android for Quest builds.
             if (IsDeprecatedOculusQuestAndroidBlock(block))
             {
@@ -210,7 +233,18 @@ public static class ApplyXrTargetEditor
 
     static bool IsViveOpenXrBlock(string block)
     {
-        return block.Contains("VIVE.OpenXR::", StringComparison.Ordinal);
+        if (block.Contains("VIVE.OpenXR::", StringComparison.Ordinal))
+            return true;
+        // Merged YAML sometimes uses m_EditorClassIdentifier: VIVE.OpenXR:VIVE... (single colon after OpenXR)
+        return block.Contains("m_EditorClassIdentifier: VIVE.OpenXR", StringComparison.Ordinal);
+    }
+
+    /// <summary>Duplicate/merged VIVE feature stubs reference no script; they must never be enabled alongside the real block.</summary>
+    static bool IsViveOpenXrBlockWithMissingMonoScript(string block)
+    {
+        if (!block.Contains("VIVE.OpenXR", StringComparison.Ordinal))
+            return false;
+        return block.Contains("m_Script: {fileID: 0}", StringComparison.Ordinal);
     }
 
     static bool IsViveFirstPersonObserverBlock(string block)
@@ -222,6 +256,11 @@ public static class ApplyXrTargetEditor
     static bool IsViveSpectatorSecondaryViewBlock(string block)
     {
         return block.Contains("ViveSecondaryViewConfiguration", StringComparison.Ordinal);
+    }
+
+    static bool IsViveCompositionLayerPassthroughAndroidBlock(string block)
+    {
+        return block.Contains("ViveCompositionLayerPassthrough Android", StringComparison.Ordinal);
     }
 
     static bool IsDeprecatedOculusQuestAndroidBlock(string block)
