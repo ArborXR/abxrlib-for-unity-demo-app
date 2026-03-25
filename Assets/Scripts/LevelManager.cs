@@ -39,7 +39,10 @@ public class LevelManager : MonoBehaviour
         Abxr.OnAuthCompleted += OnAuthenticationCompleted;
         // Subscribe to AbxrLib's moduleTarget event
         Abxr.OnModuleTarget += OnDeepLinkReceived;
-        
+
+        // Configuration has enableAutoStartAuthentication off; start auth explicitly when the level is ready.
+        Abxr.StartAuthentication();
+
         Abxr.EventAssessmentStart("stocking_training_unit_1");
     }
 
@@ -288,9 +291,11 @@ public class LevelManager : MonoBehaviour
     
     private void OnDestroy()
     {
+        Abxr.OnAuthCompleted -= OnAuthenticationCompleted;
+
         // Unsubscribe from Android deep link events
         DeepLinkHandler.OnDeepLinkReceived -= OnDeepLinkReceived;
-        
+
         // Unsubscribe from AbxrLib moduleTarget events
         Abxr.OnModuleTarget -= OnDeepLinkReceived;
     }

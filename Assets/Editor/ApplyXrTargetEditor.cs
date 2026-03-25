@@ -9,20 +9,27 @@ using UnityEditor.Build.Profile;
 using UnityEngine;
 
 /// <summary>
-/// Applies Android XR vendor selection: Resources config, optional VIVE UPM line, OpenXR YAML feature toggles, Android scripting defines,
+/// Applies Android XR vendor selection: Resources config, OpenXR YAML feature toggles, Android scripting defines,
 /// and (Unity 6) the active Build Profile under <c>Assets/Settings/Build Profiles/</c>.
+/// <c>com.htc.upm.vive.openxr</c> stays in <c>Packages/manifest.json</c> so merged Open XR settings deserialize; vendor behavior is toggled here, not by removing the package.
+/// <para />
+/// <c>Open XR Package Settings.baseline.asset</c> is a frozen multi-vendor layout (PICO + VIVE + Meta blocks). Each <see cref="Apply"/> copies it over
+/// <c>Open XR Package Settings.asset</c> before toggling, so the active file does not accumulate endless manual merges.
 /// </summary>
 public static class ApplyXrTargetEditor
 {
-    const string VivePackageId = "com.htc.upm.vive.openxr";
-    const string VivePackageLine = "    \"com.htc.upm.vive.openxr\": \"https://github.com/ViveSoftware/VIVE-OpenXR.git?path=com.htc.upm.vive.openxr\",";
-
     const string DefineMeta = "ABXR_ANDROID_TARGET_META";
     const string DefinePico = "ABXR_ANDROID_TARGET_PICO";
     const string DefineHtc = "ABXR_ANDROID_TARGET_HTC";
 
     static readonly string OpenXrSettingsPath = Path.Combine("Assets", "XR", "Settings", "Open XR Package Settings.asset");
-    static readonly string ManifestPath = Path.Combine("Packages", "manifest.json");
+    static readonly string OpenXrBaselinePath = Path.Combine("Assets", "XR", "Settings", "Open XR Package Settings.baseline.asset");
+    const string OpenXrSettingsAssetPath = "Assets/XR/Settings/Open XR Package Settings.asset";
+
+    /// <summary>Root object name in YAML must match the .asset filename; baseline uses a .baseline suffix.</summary>
+    const string OpenXrYamlMainNameBaseline = "  m_Name: Open XR Package Settings.baseline";
+
+    const string OpenXrYamlMainNameActive = "  m_Name: Open XR Package Settings";
     static readonly string ConfigResourcePath = Path.Combine("Assets", "Resources", "XrAndroidTargetConfig.asset");
 
     const string BuildProfileMetaPath = "Assets/Settings/Build Profiles/Android_Meta.asset";
@@ -38,6 +45,26 @@ public static class ApplyXrTargetEditor
     [MenuItem("XRBuildTools/Android XR Target/HTC (VIVE)")]
     public static void ApplyHtc() => Apply(XrAndroidTargetConfig.Vendor.Htc);
 
+    /// <summary>Copies baseline → active OpenXR settings without changing vendor (use after editing <c>Open XR Package Settings.baseline.asset</c>).</summary>
+    [MenuItem("XRBuildTools/Android XR Target/Restore OpenXR from baseline (keep current vendor)")]
+    public static void RestoreOpenXrFromBaselineMenu()
+    {
+        var cfg = AssetDatabase.LoadAssetAtPath<XrAndroidTargetConfig>(ConfigResourcePath);
+        if (cfg == null)
+        {
+            Debug.LogError("[ApplyXrTarget] Missing XrAndroidTargetConfig at " + ConfigResourcePath);
+            return;
+        }
+
+        if (!TryRestoreOpenXrFromBaseline())
+            return;
+
+        ToggleOpenXrYamlFeatures(cfg.activeVendor);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline and re-applied toggles for vendor = {cfg.activeVendor}.");
+    }
+
     public static void Apply(XrAndroidTargetConfig.Vendor vendor)
     {
         var cfg = AssetDatabase.LoadAssetAtPath<XrAndroidTargetConfig>(ConfigResourcePath);
@@ -51,64 +78,41 @@ public static class ApplyXrTargetEditor
         cfg.activeVendor = vendor;
         EditorUtility.SetDirty(cfg);
 
-        SyncVivePackageInManifest(vendor == XrAndroidTargetConfig.Vendor.Htc);
+        TryRestoreOpenXrFromBaseline();
         ToggleOpenXrYamlFeatures(vendor);
         SetAndroidScriptingDefines(vendor);
         TrySetActiveBuildProfile(vendor);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Build Profile, Packages/manifest, and OpenXR settings updated; resolve packages if prompted.");
+        Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Restored OpenXR from baseline (if present), applied toggles, Build Profile, and defines.");
     }
 
     /// <summary>
-    /// Adds or removes the VIVE OpenXR UPM line. When adding, inserts immediately after the <c>com.arborxr.unity</c> dependency line (any source: git, local path, etc.).
-    /// HTC target includes the package; Meta/Pico remove it so local abxrlib paths and non-HTC workflows stay valid.
+    /// Copies <c>Open XR Package Settings.baseline.asset</c> onto <c>Open XR Package Settings.asset</c>.
+    /// Returns false if baseline is missing (Apply continues with toggles on whatever is already in the active asset).
     /// </summary>
-    public static void SyncVivePackageInManifest(bool includeVive)
+    public static bool TryRestoreOpenXrFromBaseline()
     {
-        var full = Path.GetFullPath(ManifestPath);
-        if (!File.Exists(full))
-            return;
-
-        var lines = File.ReadAllLines(full).ToList();
-        lines.RemoveAll(l => IsViveManifestLine(l));
-
-        if (!includeVive)
+        var baselineFull = Path.GetFullPath(OpenXrBaselinePath);
+        var targetFull = Path.GetFullPath(OpenXrSettingsPath);
+        if (!File.Exists(baselineFull))
         {
-            File.WriteAllLines(full, lines);
-            return;
+            Debug.LogWarning("[ApplyXrTarget] Missing baseline at " + OpenXrBaselinePath + ". Skipping restore; edit toggles on the active OpenXR asset only.");
+            return false;
         }
 
-        var insertAt = -1;
-        for (var i = 0; i < lines.Count; i++)
-        {
-            if (lines[i].Contains("\"com.arborxr.unity\"", StringComparison.Ordinal))
-            {
-                insertAt = i + 1;
-                break;
-            }
-        }
+        File.Copy(baselineFull, targetFull, overwrite: true);
 
-        if (insertAt < 0)
-        {
-            Debug.LogWarning("[ApplyXrTarget] Packages/manifest.json has no \"com.arborxr.unity\" dependency; cannot insert VIVE OpenXR package.");
-            File.WriteAllLines(full, lines);
-            return;
-        }
+        // Active asset filename is "Open XR Package Settings.asset" — root m_Name must be "Open XR Package Settings", not ".baseline".
+        var yaml = File.ReadAllText(targetFull);
+        if (yaml.Contains(OpenXrYamlMainNameBaseline))
+            yaml = yaml.Replace(OpenXrYamlMainNameBaseline, OpenXrYamlMainNameActive, StringComparison.Ordinal);
+        File.WriteAllText(targetFull, yaml);
 
-        lines.Insert(insertAt, VivePackageLine);
-        File.WriteAllLines(full, lines);
+        AssetDatabase.ImportAsset(OpenXrSettingsAssetPath, ImportAssetOptions.ForceUpdate);
+        return true;
     }
-
-    static bool IsViveManifestLine(string line)
-    {
-        var t = line.TrimStart();
-        return t.StartsWith($"\"{VivePackageId}\"", StringComparison.Ordinal);
-    }
-
-    /// <summary>Backward-compatible alias: ensures VIVE is present (HTC-style).</summary>
-    public static void EnsureVivePackageInManifest() => SyncVivePackageInManifest(true);
 
     static void TrySetActiveBuildProfile(XrAndroidTargetConfig.Vendor vendor)
     {

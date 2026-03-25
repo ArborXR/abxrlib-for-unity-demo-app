@@ -51,7 +51,7 @@ The project includes various prefabs, scenes, and scripts that demonstrate best 
 
 This branch uses **Unity 6 Build Profiles** (`Android_Meta`, `Android_Pico`, `Android_HTC`) plus Editor tooling:
 
-1. **Apply vendor settings** (manifest guard, OpenXR feature toggles, Android scripting defines, `Resources/XrAndroidTargetConfig`):
+1. **Apply vendor settings** (OpenXR feature toggles, Android scripting defines, `Resources/XrAndroidTargetConfig`):
    - Menu: **XRBuildTools → Android XR Target →** Meta (Quest), Pico, or HTC (VIVE).
 
 2. **Build Profiles**: Use **File → Build Profiles** and pick the profile that matches the device. Run **Apply** above when switching vendors so OpenXR and defines stay aligned.
@@ -64,7 +64,7 @@ This branch uses **Unity 6 Build Profiles** (`Android_Meta`, `Android_Pico`, `An
    ```
    Set `XR_TARGET` to `meta`, `pico`, or `htc`. Optional: `ABXR_BUILD_OUTPUT_DIR`, `ABXR_BUILD_NAME` for the output APK path.
 
-4. **Merged OpenXR settings**: `Assets/XR/Settings/Open XR Package Settings.asset` combines PICO- and VIVE-specific features; the Apply menu enables/disables vendor blocks for the active target. Re-merging from branches can be done with `Tools/merge_openxr_package_settings.py` if needed.
+4. **OpenXR baseline + active file**: `Open XR Package Settings.baseline.asset` is the **frozen** multi-vendor layout (all PICO / VIVE / Meta feature blocks you need in YAML—create it once in the Editor, or copy from a known-good branch or git history). **Do not** treat the active `Open XR Package Settings.asset` as the long-lived merged source; it gets overwritten. Each time you use **XRBuildTools → Android XR Target →** Meta / Pico / HTC, the tool **copies the baseline over the active file**, then applies vendor-specific `m_enabled` toggles. That avoids an endlessly re-merged “living” asset. To refresh the baseline after a Unity/OpenXR upgrade or a deliberate merge, edit or replace `Open XR Package Settings.baseline.asset`, commit it, then run **Restore OpenXR from baseline (keep current vendor)** or any **Apply** menu item. *Note:* a minimal `main`-branch-only OpenXR file usually does **not** contain enough PICO/VIVE sub-assets to serve as the multi-target baseline—use a merged snapshot or the provided baseline.
 
 ## How to Test
 
