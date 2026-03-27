@@ -972,24 +972,24 @@ MonoBehaviour:
   m_Name: Standalone
   m_EditorClassIdentifier: 
   features:
-  - {fileID: 8221564594354640495}
-  - {fileID: -8749980634715080836}
-  - {fileID: 9096479736163431129}
+  - {fileID: 4963040286616351577}
+  - {fileID: -1557233674024107270}
+  - {fileID: 4893829345954421791}
   - {fileID: 2457062633717530596}
-  - {fileID: -4478006660784508864}
-  - {fileID: -6081641041439107477}
-  - {fileID: 32361891232910083}
-  - {fileID: 2497339995422133549}
-  - {fileID: -5941725581135416239}
+  - {fileID: 5047315830286589360}
+  - {fileID: 6504682016904032715}
+  - {fileID: 5007098057516315081}
+  - {fileID: 1727173055597128861}
+  - {fileID: 928296757526069075}
   - {fileID: 8136950723934313099}
-  - {fileID: 4025793028449617705}
-  - {fileID: -381482547018402083}
-  - {fileID: 6841333374066517713}
-  - {fileID: 4054846353496584751}
-  - {fileID: 8696673654983134887}
-  - {fileID: -4731438336562001402}
-  - {fileID: 4135229692886101830}
-  - {fileID: 2220871646205782247}
+  - {fileID: -1028784285735575096}
+  - {fileID: -2513858183220632965}
+  - {fileID: 5447152813868908602}
+  - {fileID: -8316650401159007347}
+  - {fileID: -8895518590110429109}
+  - {fileID: 4451366187881382638}
+  - {fileID: 2316775424616146661}
+  - {fileID: -5611916350011621528}
   - {fileID: -8568528722269745433}
   customLoaderName: 
   m_renderMode: 1
@@ -2328,7 +2328,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: feeef8d85de8db242bdda70cc7ff5acd, type: 3}
   m_Name: OculusTouchControllerProfile Android
   m_EditorClassIdentifier: 
-  m_enabled: 1
+  m_enabled: 0
   nameUi: Oculus Touch Controller Profile
   version: 0.0.1
   featureIdInternal: com.unity.openxr.feature.input.oculustouch
@@ -2756,7 +2756,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f647cc0545697264a9878224faada6d5, type: 3}
   m_Name: MetaQuestFeature Android
   m_EditorClassIdentifier: 
-  m_enabled: 1
+  m_enabled: 0
   nameUi: Meta Quest Support
   version: 1.0.0
   featureIdInternal: com.unity.openxr.feature.metaquest

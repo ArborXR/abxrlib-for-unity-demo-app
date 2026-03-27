@@ -77,3 +77,16 @@ are safe to ignore for local development, or clear when PICO ships a newer SDK.
 Optional: if you **only** target Pico, you can turn off **Meta Quest Support**
 under **Project Settings > XR Plug-in Management > OpenXR > Android** to reduce
 Meta-specific checks — Game Activity is still the right default for Unity 6.
+
+OpenXR build fails: “Only the PICO Touch Interaction Profile is supported”
+---------------------------------------------------------------------------
+When **PICO Support** is enabled for Android, PICO’s OpenXR validation rejects
+any **non-PICO** interaction profile (e.g. **Oculus Touch Controller Profile**).
+In **Project Settings > XR Plug-in Management > OpenXR > Android**, disable
+**Oculus Touch Controller Profile** (and keep a PICO profile such as PICO4 /
+Neo3 enabled). **Meta Quest Support** should be off for Pico-only builds.
+
+**appID is not configured** — from PICO’s Platform preprocessor when
+`Assets/Resources/PXR_PlatformSetting.asset` has an empty **appID** (warning only
+unless PICO changes it). Set a PICO developer **app ID** there if you use PICO
+Platform services that require it.
