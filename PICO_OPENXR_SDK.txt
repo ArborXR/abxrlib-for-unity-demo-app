@@ -1,54 +1,62 @@
 PICO OpenXR (required for Pico headset builds)
 ==============================================
 
-This project depends on the PICO Unity OpenXR Integration SDK package
-(com.unity.xr.openxr.picoxr) via Packages/manifest.json.
+This project depends on the PICO **OpenXR** package (com.unity.xr.openxr.picoxr)
+via Packages/manifest.json. That is **not** the same as the root package inside
+"PICO Unity Integration SDK" (that root is com.unity.xr.picoxr — used by many
+PICO projects without OpenXR).
 
-Why you do not see the SDK on GitHub
-------------------------------------
-The SDK is vendor software (PICO): large, versioned releases, and subject to
-their license. It is not committed to this repo so the repo stays small,
-clones stay fast, and we avoid redistributing third-party binaries in git.
-You install it locally on each machine that builds for Pico.
+This demo is **OpenXR-based** (XR Plug-in Management uses the OpenXR loader and
+PICO OpenXR features). You still need the **OpenXR Integration SDK** contents
+on disk, but they can live **inside** your existing PICO Unity Integration SDK
+folder so everything matches your other projects’ layout.
 
-Where to put the SDK on disk
-----------------------------
-The manifest uses a path relative to this Unity project root:
+Why you do not see vendor files on GitHub
+-----------------------------------------
+PICO SDKs are large and licensed; we do not commit them. Install locally on each
+machine that builds for Pico.
 
-  ../PicoOpenXRIntegrationSDK
+Where to put files on disk (current layout)
+-------------------------------------------
+Relative to this Unity project root, the manifest points at:
 
-So the SDK folder must sit next to this project folder, not inside Assets.
+  ../PICO Unity Integration SDK-3.2.0-20250707/PicoOpenXRPlugin
 
-Example layout:
+Example:
 
   .../arborxr/
-    abxrlib-for-unity-demo-app/     <- Unity project (this repo)
+    abxrlib-for-unity-demo-app/              <- Unity project (this repo)
       Assets/
       Packages/
       ...
-    PicoOpenXRIntegrationSDK/       <- extract or rename the PICO OpenXR ZIP here
+    PICO Unity Integration SDK-3.2.0-20250707/   <- same folder you use elsewhere
+      package.json                             <- com.unity.xr.picoxr (other projects)
+      Runtime/
+      ...
+      PicoOpenXRPlugin/                        <- OpenXR plugin for *this* project
+        package.json                           <- com.unity.xr.openxr.picoxr
 
-That folder must contain package.json for com.unity.xr.openxr.picoxr.
+Create PicoOpenXRPlugin by extracting PICO’s **Unity OpenXR Integration** ZIP
+so that package.json (name com.unity.xr.openxr.picoxr) sits directly inside
+PicoOpenXRPlugin/. If you already have that tree elsewhere, move or symlink it
+to that path.
 
-Rename example (macOS/Linux), from the parent of the extracted ZIP:
+In Unity: Project > Packages > "PICO OpenXR Plugin" (embedded local package).
 
-  mv "Unity OpenXR IntegrationSDK-1.4.0-20250407" ../PicoOpenXRIntegrationSDK
-
-(if your Unity project is in abxrlib-for-unity-demo-app, place PicoOpenXRIntegrationSDK
-in the same directory as abxrlib-for-unity-demo-app)
-
-In Unity: Project window > Packages > "PICO OpenXR Plugin" (embedded local package).
-
-Setup
------
-1. Download from PICO Developer Resources (Unity / OpenXR integration):
+Setup checklist
+---------------
+1. OpenXR ZIP from PICO Developer Resources (Unity / OpenXR integration):
    https://developer.picoxr.com/resources/
 
-2. Place the folder as ../PicoOpenXRIntegrationSDK relative to the project root.
+2. Place the OpenXR package at:
+   ../PICO Unity Integration SDK-3.2.0-20250707/PicoOpenXRPlugin
+   (folder name may differ; then adjust manifest.json to match.)
 
-3. Open the project in Unity so Package Manager resolves the package.
+3. Open the Unity project so Package Manager resolves the package.
 
 4. Edit > Project Settings > XR Plug-in Management > Android: OpenXR enabled;
-   PICO Support / profiles match your device (PICO docs: Complete project settings).
+   PICO Support / profiles match your device.
 
-If you see a flat black panel on device, the SDK path is wrong or missing.
+If you see a flat black panel on device, the OpenXR path is wrong or missing, or
+the Integration SDK version does not match what PICO documents for your Unity
+version.
