@@ -104,7 +104,6 @@ Assets/Resources/*.meta
 !Assets/Resources/PXR_PlatformSetting.asset
 !Assets/Resources/PXR_PlatformSetting.asset.meta
 
-# PICO Unity OpenXR Integration SDK: extract to project root (see PICO_OPENXR_SDK.txt)
-/PicoOpenXRIntegrationSDK/
+# PICO SDK contents are ignored via PicoOpenXRIntegrationSDK/.gitignore (folder stays visible).
 Assets/Resources/PerformanceTestRun*.json
 /.utmp

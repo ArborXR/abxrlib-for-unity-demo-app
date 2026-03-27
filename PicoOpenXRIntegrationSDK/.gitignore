@@ -1,0 +1,3 @@
+# Ignore extracted PICO OpenXR Integration SDK (local only). Keep this file tracked.
+**/*
+!.gitignore

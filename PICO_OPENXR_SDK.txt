@@ -16,6 +16,11 @@ This project depends on the PICO Unity OpenXR Integration SDK package
    That folder must contain package.json for com.unity.xr.openxr.picoxr.
    Example (macOS/Linux): ln -s "Unity OpenXR IntegrationSDK-1.4.0-20250407" PicoOpenXRIntegrationSDK
 
+   Where it lives (not under Assets):
+   - On disk: <project root>/PicoOpenXRIntegrationSDK/  (same level as Assets and Packages)
+   - In Unity: Project window > Packages > "PICO OpenXR Plugin" (embedded local package)
+   - SDK source files are Runtime/, Editor/, Platform/, Platform/..., etc. inside that folder.
+
 3. Open the project in Unity. Package Manager will resolve the local package.
 
 4. In Unity: Edit > Project Settings > XR Plug-in Management > Android,
