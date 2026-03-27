@@ -104,6 +104,6 @@ Assets/Resources/*.meta
 !Assets/Resources/PXR_PlatformSetting.asset
 !Assets/Resources/PXR_PlatformSetting.asset.meta
 
-# PICO SDK contents are ignored via PicoOpenXRIntegrationSDK/.gitignore (folder stays visible).
+# PICO OpenXR SDK lives outside this repo: ../PicoOpenXRIntegrationSDK (see PICO_OPENXR_SDK.txt)
 Assets/Resources/PerformanceTestRun*.json
 /.utmp

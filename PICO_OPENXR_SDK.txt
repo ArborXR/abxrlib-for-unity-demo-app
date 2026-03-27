@@ -4,28 +4,51 @@ PICO OpenXR (required for Pico headset builds)
 This project depends on the PICO Unity OpenXR Integration SDK package
 (com.unity.xr.openxr.picoxr) via Packages/manifest.json.
 
-1. Download the SDK from PICO Developer Resources (Unity / OpenXR integration):
+Why you do not see the SDK on GitHub
+------------------------------------
+The SDK is vendor software (PICO): large, versioned releases, and subject to
+their license. It is not committed to this repo so the repo stays small,
+clones stay fast, and we avoid redistributing third-party binaries in git.
+You install it locally on each machine that builds for Pico.
+
+Where to put the SDK on disk
+----------------------------
+The manifest uses a path relative to this Unity project root:
+
+  ../PicoOpenXRIntegrationSDK
+
+So the SDK folder must sit next to this project folder, not inside Assets.
+
+Example layout:
+
+  .../arborxr/
+    abxrlib-for-unity-demo-app/     <- Unity project (this repo)
+      Assets/
+      Packages/
+      ...
+    PicoOpenXRIntegrationSDK/       <- extract or rename the PICO OpenXR ZIP here
+
+That folder must contain package.json for com.unity.xr.openxr.picoxr.
+
+Rename example (macOS/Linux), from the parent of the extracted ZIP:
+
+  mv "Unity OpenXR IntegrationSDK-1.4.0-20250407" ../PicoOpenXRIntegrationSDK
+
+(if your Unity project is in abxrlib-for-unity-demo-app, place PicoOpenXRIntegrationSDK
+in the same directory as abxrlib-for-unity-demo-app)
+
+In Unity: Project window > Packages > "PICO OpenXR Plugin" (embedded local package).
+
+Setup
+-----
+1. Download from PICO Developer Resources (Unity / OpenXR integration):
    https://developer.picoxr.com/resources/
 
-2. Extract the ZIP. PICO often names the folder something like:
-   Unity OpenXR IntegrationSDK-<version>
+2. Place the folder as ../PicoOpenXRIntegrationSDK relative to the project root.
 
-   Rename or symlink it to exactly:
-   PicoOpenXRIntegrationSDK
+3. Open the project in Unity so Package Manager resolves the package.
 
-   That folder must contain package.json for com.unity.xr.openxr.picoxr.
-   Example (macOS/Linux): ln -s "Unity OpenXR IntegrationSDK-1.4.0-20250407" PicoOpenXRIntegrationSDK
+4. Edit > Project Settings > XR Plug-in Management > Android: OpenXR enabled;
+   PICO Support / profiles match your device (PICO docs: Complete project settings).
 
-   Where it lives (not under Assets):
-   - On disk: <project root>/PicoOpenXRIntegrationSDK/  (same level as Assets and Packages)
-   - In Unity: Project window > Packages > "PICO OpenXR Plugin" (embedded local package)
-   - SDK source files are Runtime/, Editor/, Platform/, Platform/..., etc. inside that folder.
-
-3. Open the project in Unity. Package Manager will resolve the local package.
-
-4. In Unity: Edit > Project Settings > XR Plug-in Management > Android,
-   ensure OpenXR is enabled and PICO Support / PICO interaction profiles
-   match your device (see PICO docs: Complete project settings).
-
-If you see a flat black panel in the headset, the SDK folder is missing
-or the wrong path — Unity cannot load the Pico OpenXR runtime.
+If you see a flat black panel on device, the SDK path is wrong or missing.
