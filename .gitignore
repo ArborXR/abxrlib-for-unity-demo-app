@@ -101,5 +101,10 @@ crashlytics-build.properties
 #ProjectSettings/ProjectSettings.asset
 Assets/Resources/*.asset
 Assets/Resources/*.meta
+!Assets/Resources/PXR_PlatformSetting.asset
+!Assets/Resources/PXR_PlatformSetting.asset.meta
+
+# PICO Unity OpenXR Integration SDK: extract to project root (see PICO_OPENXR_SDK.txt)
+/PicoOpenXRIntegrationSDK/
 Assets/Resources/PerformanceTestRun*.json
 /.utmp
