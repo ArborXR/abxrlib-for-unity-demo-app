@@ -1,62 +1,79 @@
 PICO OpenXR (required for Pico headset builds)
 ==============================================
 
-This project depends on the PICO **OpenXR** package (com.unity.xr.openxr.picoxr)
-via Packages/manifest.json. That is **not** the same as the root package inside
-"PICO Unity Integration SDK" (that root is com.unity.xr.picoxr — used by many
-PICO projects without OpenXR).
+This project uses the PICO **OpenXR** package (com.unity.xr.openxr.picoxr) from a
+**local folder** in manifest.json. PICO distributes it as the "Unity OpenXR
+Integration" SDK ZIP; it is **not** the same package as "PICO Unity Integration
+SDK" (com.unity.xr.picoxr at that ZIP’s root).
 
-This demo is **OpenXR-based** (XR Plug-in Management uses the OpenXR loader and
-PICO OpenXR features). You still need the **OpenXR Integration SDK** contents
-on disk, but they can live **inside** your existing PICO Unity Integration SDK
-folder so everything matches your other projects’ layout.
+com.unity.xr.openxr (Unity) is on the Unity registry; **com.unity.xr.openxr.picoxr**
+(PICO’s OpenXR features) comes from PICO only — use the extracted ZIP path below
+if you do not have another approved way to supply it.
 
-Why you do not see vendor files on GitHub
------------------------------------------
-PICO SDKs are large and licensed; we do not commit them. Install locally on each
-machine that builds for Pico.
+Why vendor files are not in git
+-------------------------------
+SDKs are large and PICO’s license restricts redistribution. Install locally per
+machine (see LICENSE in the SDK).
 
-Where to put files on disk (current layout)
--------------------------------------------
-Relative to this Unity project root, the manifest points at:
-
-  ../PICO Unity Integration SDK-3.2.0-20250707/PicoOpenXRPlugin
-
-Example:
+Layout next to this Unity project
+---------------------------------
+Extract PICO’s OpenXR Integration ZIP so it sits **next to** this project folder
+(sibling of the folder that contains Assets and Packages):
 
   .../arborxr/
-    abxrlib-for-unity-demo-app/              <- Unity project (this repo)
-      Assets/
+    abxrlib-for-unity-demo-app/                    <- Unity project (this repo)
       Packages/
+        manifest.json  ->  file:../../Unity OpenXR IntegrationSDK-1.4.0-20250407
       ...
-    PICO Unity Integration SDK-3.2.0-20250707/   <- same folder you use elsewhere
-      package.json                             <- com.unity.xr.picoxr (other projects)
+    Unity OpenXR IntegrationSDK-1.4.0-20250407/    <- OpenXR package root
+      package.json                                 <- com.unity.xr.openxr.picoxr
       Runtime/
+      Editor/
       ...
-      PicoOpenXRPlugin/                        <- OpenXR plugin for *this* project
-        package.json                           <- com.unity.xr.openxr.picoxr
 
-Create PicoOpenXRPlugin by extracting PICO’s **Unity OpenXR Integration** ZIP
-so that package.json (name com.unity.xr.openxr.picoxr) sits directly inside
-PicoOpenXRPlugin/. If you already have that tree elsewhere, move or symlink it
-to that path.
+Unity resolves `file:` paths in manifest.json **relative to the Packages folder**,
+not the project root — so use `../../` to go up to the parent of the project, then
+into the OpenXR folder. (`../` would incorrectly look inside the project folder.)
 
-In Unity: Project > Packages > "PICO OpenXR Plugin" (embedded local package).
+If your extracted folder name differs, edit Packages/manifest.json to match.
 
-Setup checklist
----------------
-1. OpenXR ZIP from PICO Developer Resources (Unity / OpenXR integration):
+Optional (other PICO projects): you may also keep
+`PICO Unity Integration SDK-3.2.0-20250707/` beside the project; this demo does
+**not** reference that path for OpenXR.
+
+Setup
+-----
+1. Download: PICO Developer Resources — Unity / OpenXR integration
    https://developer.picoxr.com/resources/
 
-2. Place the OpenXR package at:
-   ../PICO Unity Integration SDK-3.2.0-20250707/PicoOpenXRPlugin
-   (folder name may differ; then adjust manifest.json to match.)
+2. Unzip so `../../Unity OpenXR IntegrationSDK-1.4.0-20250407/package.json` exists
+   relative to Packages/ (sibling of project folder; or change manifest to your folder name).
 
-3. Open the Unity project so Package Manager resolves the package.
+3. Open the Unity project; Package Manager should show "PICO OpenXR Plugin"
+   under Packages (embedded).
 
 4. Edit > Project Settings > XR Plug-in Management > Android: OpenXR enabled;
-   PICO Support / profiles match your device.
+   PICO Support and device profiles as in PICO docs.
 
-If you see a flat black panel on device, the OpenXR path is wrong or missing, or
-the Integration SDK version does not match what PICO documents for your Unity
-version.
+If the headset shows a flat black panel, the local package path is wrong or the
+OpenXR ZIP version is incompatible with your Unity Editor version — check PICO’s
+documentation for your Unity/OpenXR versions.
+
+Unity 6 Android — Game Activity (project validation)
+------------------------------------------------------
+Unity 6 expects **Application Entry Point = Game Activity** for Android (OpenXR’s
+Meta Quest Support check also flags legacy Activity). This repo sets that in
+ProjectSettings (androidApplicationEntry = GameActivity). In the Editor: **Edit >
+Project Settings > Player > Android > Other Settings > Application Entry Point >
+Game Activity**.
+
+PICO OpenXR ZIP — compiler / import warnings
+--------------------------------------------
+CS0108, CS0168, CS0414, CS1998, empty animation clips, and “GetDeviceLayoutName”
+messages under `Unity OpenXR IntegrationSDK-...` are **PICO’s sources**, not this
+demo. Do not hand-edit that tree (updates overwrite it; license is PICO’s). They
+are safe to ignore for local development, or clear when PICO ships a newer SDK.
+
+Optional: if you **only** target Pico, you can turn off **Meta Quest Support**
+under **Project Settings > XR Plug-in Management > OpenXR > Android** to reduce
+Meta-specific checks — Game Activity is still the right default for Unity 6.
