@@ -29,21 +29,13 @@ public class LevelManager : MonoBehaviour
 
         // Initialize Android deep link handler for external deep links (not moduleTarget)
         InitializeAndroidDeepLinkHandler();
-        
-        InitializeGame();
-        InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
-        InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
-        
         // Set up authentication completion callback to log module information
         // See OnAuthenticationCompleted below for authentication completion callback
         Abxr.OnAuthCompleted += OnAuthenticationCompleted;
         // Subscribe to AbxrLib's moduleTarget event
         Abxr.OnModuleTarget += OnDeepLinkReceived;
 
-        // Configuration has enableAutoStartAuthentication off; start auth explicitly when the level is ready.
         Abxr.StartAuthentication();
-
-        Abxr.EventAssessmentStart("stocking_training_unit_1");
     }
 
     private void CheckForCompletion()
@@ -240,6 +232,16 @@ public class LevelManager : MonoBehaviour
             Debug.Log("User data is not available in authentication response");
         }
         Debug.Log("=== AUTHENTICATION COMPLETED ===");
+
+        if (dropper != null)
+            dropper.BeginGameplayAfterAuth();
+
+        InitializeGame();
+        InvokeRepeating(nameof(CheckRunTime), 0, 300); // Call every 5 minutes
+        InvokeRepeating(nameof(TestCheck), 0, 30); // Call every 30 seconds
+               
+        Abxr.EventAssessmentStart("stocking_training_unit_1");
+
         Debug.Log("=== MODULE INFORMATION ===");
 
         var modules = Abxr.GetModuleList();
@@ -252,6 +254,7 @@ public class LevelManager : MonoBehaviour
             Debug.Log("Modules defined, will execute next.");
         }
         Debug.Log("=== END MODULE INFORMATION ===");
+
         return;
     }
     private void Module_b787_baggage_load()
@@ -295,7 +298,7 @@ public class LevelManager : MonoBehaviour
 
         // Unsubscribe from Android deep link events
         DeepLinkHandler.OnDeepLinkReceived -= OnDeepLinkReceived;
-
+        
         // Unsubscribe from AbxrLib moduleTarget events
         Abxr.OnModuleTarget -= OnDeepLinkReceived;
     }
