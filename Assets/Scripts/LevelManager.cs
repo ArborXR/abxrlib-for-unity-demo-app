@@ -13,8 +13,6 @@ public class LevelManager : MonoBehaviour
     public double score;
     private int _totalTargets;
     private int _completedTargets;
-    private const double passingScore = 70;
-
     private void Start()
     {
         Debug.Log("LevelManager: Start()");
@@ -42,24 +40,15 @@ public class LevelManager : MonoBehaviour
     {
         if (_completedTargets >= _totalTargets)
         {
-            //Without meta data
-            //Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.EventStatus.Pass : Abxr.EventStatus.Fail);
-
-            //With meta data
+            const int completionScore = 100;
             var assessmentMetadata = new Abxr.Dict
             {
                 ["mode"] = "easy",
-                ["touched_floor"] = "true"
+                ["touched_floor"] = "true",
+                ["max_score"] = "100"
             };
-            Abxr.EventAssessmentComplete("stocking_training_unit_1", $"{score}", result: score > passingScore ? Abxr.EventStatus.Pass : Abxr.EventStatus.Fail, meta: assessmentMetadata);
-            if (score > passingScore)
-            {
-                PlaySuccessSound();
-            }
-            else
-            {
-                PlayFailSound();
-            }
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", completionScore, Abxr.EventStatus.Pass, meta: assessmentMetadata);
+            PlaySuccessSound();
         }
     }
 
