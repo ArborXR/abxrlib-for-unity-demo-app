@@ -16,7 +16,7 @@ Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, au
 
 ### Android XR vendors (single `multi` branch)
 
-Use **Build Profiles** `Android_Meta`, `Android_Pico`, `Android_HTC` (under `Assets/Settings/Build Profiles/`) together with **XRBuildTools → Android XR Target** to apply OpenXR toggles, `Resources/XrAndroidTargetConfig`, and Android scripting defines (`ABXR_ANDROID_TARGET_*`). **Restore OpenXR from baseline (keep current vendor)** runs the same steps for whatever vendor is already selected (after copying the baseline OpenXR asset), without toggling Meta ↔ Pico ↔ HTC. Legacy branches `main` / `pico` / `htc` are superseded by this workflow; see README for CI (`XR_TARGET`, `AbxrAndroidCiBuild.BuildFromEnvironment`).
+Use **Build Profiles** `Android_Meta`, `Android_Pico`, `Android_HTC` (under `Assets/Settings/Build Profiles/`) together with **XRBuildTools → Android XR Target** to apply OpenXR toggles, `Resources/XrAndroidTargetConfig`, Android scripting defines (`ABXR_ANDROID_TARGET_*`), optional **per-vendor main manifests** from `Assets/XRBuildTools/PlatformAndroidManifests/<Meta|Htc>/AndroidManifest.xml`, and Player Settings `use custom main manifest` (off for PICO so Unity + Pico OpenXR merge the manifest; on for Meta/HTC when a sidecar exists). **PICO** has no sidecar by default (matches single-target PICO projects). **Restore OpenXR from baseline (keep current vendor)** runs the same steps for whatever vendor is already selected (after copying the baseline OpenXR asset), without toggling Meta ↔ Pico ↔ HTC. Legacy branches `main` / `pico` / `htc` are superseded by this workflow; see README for CI (`XR_TARGET`, `AbxrAndroidCiBuild.BuildFromEnvironment`).
 
 ### How it uses other projects
 

@@ -10,8 +10,12 @@ using UnityEngine;
 
 /// <summary>
 /// Applies Android XR vendor selection: Resources config, OpenXR YAML feature toggles, Android scripting defines,
+/// optional vendor-specific main manifest from <c>Assets/XRBuildTools/PlatformAndroidManifests/&lt;Meta|Pico|Htc&gt;/AndroidManifest.xml</c>,
 /// and (Unity 6) the active Build Profile under <c>Assets/Settings/Build Profiles/</c>.
-/// <c>com.htc.upm.vive.openxr</c> stays in <c>Packages/manifest.json</c> so merged Open XR settings deserialize; vendor behavior is toggled here, not by removing the package.
+/// <c>com.htc.upm.vive.openxr</c> and <c>com.unity.xr.openxr.picoxr</c> stay in <c>Packages/manifest.json</c> so merged Open XR settings deserialize; vendor behavior is toggled here, not by removing packages.
+/// <para />
+/// <b>PICO</b> uses Unity’s merged main manifest (no <c>Assets/Plugins/Android/AndroidManifest.xml</c>) unless you add a template under the Pico folder.
+/// <b>Meta / HTC</b> use a sidecar manifest when present (e.g. deep links); otherwise the same merge behavior as PICO.
 /// <para />
 /// <c>Open XR Package Settings.baseline.asset</c> is a frozen multi-vendor layout (PICO + VIVE + Meta blocks). Each <see cref="Apply"/> copies it over
 /// <c>Open XR Package Settings.asset</c> before toggling, so the active file does not accumulate endless manual merges.
@@ -35,6 +39,10 @@ public static class ApplyXrTargetEditor
     const string BuildProfileMetaPath = "Assets/Settings/Build Profiles/Android_Meta.asset";
     const string BuildProfilePicoPath = "Assets/Settings/Build Profiles/Android_Pico.asset";
     const string BuildProfileHtcPath = "Assets/Settings/Build Profiles/Android_HTC.asset";
+
+    /// <summary>Optional per-vendor main manifest templates (committed). PICO defaults to Unity merge (no Plugins/Android manifest).</summary>
+    const string PlatformAndroidManifestsRoot = "Assets/XRBuildTools/PlatformAndroidManifests";
+    const string PluginsAndroidManifestAssetPath = "Assets/Plugins/Android/AndroidManifest.xml";
 
     [MenuItem("XRBuildTools/Android XR Target/Meta (Quest)")]
     public static void ApplyMeta() => Apply(XrAndroidTargetConfig.Vendor.Meta);
@@ -66,10 +74,11 @@ public static class ApplyXrTargetEditor
         ToggleOpenXrYamlFeatures(v);
         SetAndroidScriptingDefines(v);
         TrySetActiveBuildProfile(v);
+        ApplyPlatformAndroidManifest(v);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline; toggles, defines, and Build Profile re-applied for vendor = {v}.");
+        Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline; toggles, defines, Build Profile, and Android manifest re-applied for vendor = {v}.");
     }
 
     public static void Apply(XrAndroidTargetConfig.Vendor vendor)
@@ -89,10 +98,11 @@ public static class ApplyXrTargetEditor
         ToggleOpenXrYamlFeatures(vendor);
         SetAndroidScriptingDefines(vendor);
         TrySetActiveBuildProfile(vendor);
+        ApplyPlatformAndroidManifest(vendor);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Restored OpenXR from baseline (if present), applied toggles, Build Profile, and defines.");
+        Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Restored OpenXR from baseline (if present), applied toggles, Build Profile, manifest, and defines.");
     }
 
     /// <summary>
@@ -141,6 +151,61 @@ public static class ApplyXrTargetEditor
         }
 
         BuildProfile.SetActiveBuildProfile(profile);
+    }
+
+    /// <summary>
+    /// PICO: removes <c>Assets/Plugins/Android/AndroidManifest.xml</c> and turns off custom main manifest (Unity + XR package merge), matching single-target PICO projects.
+    /// Meta/HTC: if <c>PlatformAndroidManifests/&lt;vendor&gt;/AndroidManifest.xml</c> exists, copies it to Plugins/Android and enables custom main manifest.
+    /// </summary>
+    static void ApplyPlatformAndroidManifest(XrAndroidTargetConfig.Vendor vendor)
+    {
+        var folder = vendor switch
+        {
+            XrAndroidTargetConfig.Vendor.Meta => "Meta",
+            XrAndroidTargetConfig.Vendor.Pico => "Pico",
+            XrAndroidTargetConfig.Vendor.Htc => "Htc",
+            _ => null
+        };
+        if (folder == null)
+            return;
+
+        var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        var srcRel = Path.Combine(PlatformAndroidManifestsRoot, folder, "AndroidManifest.xml");
+        var srcFull = Path.GetFullPath(Path.Combine(projectRoot, srcRel));
+
+        if (vendor == XrAndroidTargetConfig.Vendor.Pico || !File.Exists(srcFull))
+        {
+            RemovePluginsAndroidManifestIfPresent(projectRoot);
+            PlayerSettings.useCustomMainManifest = false;
+            if (vendor != XrAndroidTargetConfig.Vendor.Pico && !File.Exists(srcFull))
+                Debug.Log("[ApplyXrTarget] No optional AndroidManifest.xml at " + srcRel + "; using Unity merged manifest (same as PICO).");
+            return;
+        }
+
+        var destDir = Path.Combine(projectRoot, "Assets", "Plugins", "Android");
+        Directory.CreateDirectory(destDir);
+        var destFull = Path.Combine(destDir, "AndroidManifest.xml");
+        File.Copy(srcFull, destFull, true);
+        PlayerSettings.useCustomMainManifest = true;
+        AssetDatabase.ImportAsset(PluginsAndroidManifestAssetPath, ImportAssetOptions.ForceUpdate);
+    }
+
+    static void RemovePluginsAndroidManifestIfPresent(string projectRoot)
+    {
+        var manifest = Path.Combine(projectRoot, "Assets", "Plugins", "Android", "AndroidManifest.xml");
+        var meta = manifest + ".meta";
+        if (File.Exists(manifest))
+            File.Delete(manifest);
+        if (File.Exists(meta))
+            File.Delete(meta);
+        try
+        {
+            var dir = Path.Combine(projectRoot, "Assets", "Plugins", "Android");
+            if (Directory.Exists(dir) && Directory.GetFiles(dir).Length == 0 && Directory.GetDirectories(dir).Length == 0)
+                Directory.Delete(dir);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     static void ToggleOpenXrYamlFeatures(XrAndroidTargetConfig.Vendor vendor)
