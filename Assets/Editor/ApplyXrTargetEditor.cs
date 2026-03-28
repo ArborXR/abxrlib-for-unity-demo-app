@@ -236,7 +236,41 @@ public static class ApplyXrTargetEditor
 
     static bool IsPicoOpenXrPackageInstalled()
     {
-        return PackageInfo.FindForPackage(PicoOpenXrPackageId) != null;
+        try
+        {
+            var manifestPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Packages", "manifest.json"));
+            if (!File.Exists(manifestPath))
+                return false;
+            var text = File.ReadAllText(manifestPath);
+            return text.Contains($"\"{PicoOpenXrPackageId}\"", StringComparison.Ordinal);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Unity 6 no longer exposes <c>useCustomMainManifest</c> on <see cref="PlayerSettings"/> / <c>PlayerSettings.Android</c> in all versions; set via serialized PlayerSettings.
+    /// </summary>
+    static void SetUseCustomMainManifest(bool value)
+    {
+        foreach (var obj in AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset"))
+        {
+            if (obj == null)
+                continue;
+            var so = new SerializedObject(obj);
+            var prop = so.FindProperty("useCustomMainManifest");
+            if (prop == null)
+                continue;
+            prop.boolValue = value;
+            so.ApplyModifiedProperties();
+            return;
+        }
     }
 
     static bool TryValidatePicoSdkOnDiskBeforeAdd(string specifier, out string error)
@@ -351,7 +385,7 @@ public static class ApplyXrTargetEditor
         if (vendor == XrAndroidTargetConfig.Vendor.Pico || !File.Exists(srcFull))
         {
             RemovePluginsAndroidManifestIfPresent(projectRoot);
-            PlayerSettings.useCustomMainManifest = false;
+            SetUseCustomMainManifest(false);
             if (vendor != XrAndroidTargetConfig.Vendor.Pico && !File.Exists(srcFull))
                 Debug.Log("[ApplyXrTarget] No optional AndroidManifest.xml at " + srcRel + "; using Unity merged manifest (same as PICO).");
             return;
@@ -361,7 +395,7 @@ public static class ApplyXrTargetEditor
         Directory.CreateDirectory(destDir);
         var destFull = Path.Combine(destDir, "AndroidManifest.xml");
         File.Copy(srcFull, destFull, true);
-        PlayerSettings.useCustomMainManifest = true;
+        SetUseCustomMainManifest(true);
         AssetDatabase.ImportAsset(PluginsAndroidManifestAssetPath, ImportAssetOptions.ForceUpdate);
     }
 
