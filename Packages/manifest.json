@@ -7,6 +7,7 @@
     "com.unity.feature.vr": "1.0.1",
     "com.unity.mobile.android-logcat": "1.4.7",
     "com.unity.multiplayer.center": "1.0.1",
+    "com.unity.nuget.newtonsoft-json": "3.2.1",
     "com.unity.render-pipelines.universal": "17.2.0",
     "com.unity.visualscripting": "1.9.8",
     "com.unity.xr.interaction.toolkit": "3.2.1",

@@ -48,8 +48,16 @@ public static class ApplyXrTargetEditor
     const string PluginsAndroidManifestAssetPath = "Assets/Plugins/Android/AndroidManifest.xml";
 
     const string PicoOpenXrPackageId = "com.unity.xr.openxr.picoxr";
-    /// <summary>Default local PICO OpenXR SDK path (Unity <c>file:</c> source, relative to project root). Override with EditorPrefs key <c>AbxrPicoOpenXrPackageSpecifier</c> (full <c>package@source</c> string).</summary>
-    const string PicoOpenXrPackageSource = "file:../../Unity OpenXR IntegrationSDK-1.4.0-20250407";
+
+    /// <summary>
+    /// Default SDK locations (paths relative to <b>project root</b> for existence checks only).
+    /// Unity’s <c>Client.Add</c> resolves <c>file:../</c> from <c>Packages/</c>, not the project root, so we convert matches to absolute <c>file:</c> paths before adding.
+    /// </summary>
+    static readonly string[] PicoOpenXrPackageSourceCandidates =
+    {
+        "file:../Unity OpenXR IntegrationSDK-1.4.0-20250407",
+        "file:../../Unity OpenXR IntegrationSDK-1.4.0-20250407",
+    };
 
     const string EditorPrefsPicoOpenXrSpecifier = "AbxrPicoOpenXrPackageSpecifier";
 
@@ -236,8 +244,81 @@ public static class ApplyXrTargetEditor
     {
         var o = EditorPrefs.GetString(EditorPrefsPicoOpenXrSpecifier, "");
         if (!string.IsNullOrWhiteSpace(o))
-            return o.Trim();
-        return $"{PicoOpenXrPackageId}@{PicoOpenXrPackageSource}";
+            return NormalizePicoPackageSpecifierForLocalAdd(o.Trim());
+        foreach (var fileSrc in PicoOpenXrPackageSourceCandidates)
+        {
+            if (!TryResolveLocalDirectoryFromFilePackageSuffix(fileSrc, out var full))
+                continue;
+            if (Directory.Exists(full))
+                return NormalizePicoPackageSpecifierForLocalAdd($"{PicoOpenXrPackageId}@{fileSrc}");
+        }
+
+        return NormalizePicoPackageSpecifierForLocalAdd($"{PicoOpenXrPackageId}@{PicoOpenXrPackageSourceCandidates[0]}");
+    }
+
+    /// <summary>
+    /// UPM’s <c>file:../</c> is relative to <c>Packages/</c>, not the project folder. Resolve to an absolute <c>file:</c> path so the SDK is found next to the repo (../ from project).
+    /// </summary>
+    static string NormalizePicoPackageSpecifierForLocalAdd(string rawSpecifier)
+    {
+        var at = rawSpecifier.IndexOf('@');
+        if (at < 0)
+            return rawSpecifier;
+        var suffix = rawSpecifier.Substring(at + 1);
+        if (!suffix.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+            return rawSpecifier;
+        if (!TryResolveLocalDirectoryFromFilePackageSuffix(suffix, out var fullDir))
+            return rawSpecifier;
+        var slash = fullDir.Replace('\\', '/');
+        return $"{rawSpecifier.Substring(0, at + 1)}file:{slash}";
+    }
+
+    /// <summary>
+    /// Resolves <paramref name="suffix"/> as the full <c>file:...</c> part after <c>package@</c>.
+    /// Do not use <see cref="string.TrimStart(char)"/> on slashes: <c>file:///Users/...</c> becomes <c>//Users/...</c> after <c>file:</c>, and trimming slashes turns it into <c>Users/...</c> and breaks absolute paths.
+    /// </summary>
+    static bool TryResolveLocalDirectoryFromFilePackageSuffix(string suffix, out string directoryFullPath)
+    {
+        directoryFullPath = null;
+        if (!suffix.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var rest = suffix.Substring("file:".Length);
+        rest = rest.Trim(); // whitespace only, never slashes
+
+        var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+
+        // Absolute file URI (file:///Users/... on macOS, file:///C:/... on Windows)
+        try
+        {
+            if (Uri.TryCreate(suffix, UriKind.Absolute, out var uri) && uri.IsFile)
+            {
+                var lp = uri.LocalPath;
+                if (!string.IsNullOrEmpty(lp))
+                {
+                    directoryFullPath = Path.GetFullPath(lp);
+                    return true;
+                }
+            }
+        }
+        catch (UriFormatException)
+        {
+        }
+
+        // Path relative to project root (../Unity OpenXR IntegrationSDK-..., etc.)
+        directoryFullPath = Path.GetFullPath(Path.Combine(projectRoot, rest));
+        return true;
+    }
+
+    static bool TryGetDirectoryFromLocalFilePackageSpecifier(string specifier, out string directoryFullPath)
+    {
+        directoryFullPath = null;
+        var at = specifier.IndexOf('@');
+        if (at < 0)
+            return false;
+        var suffix = specifier.Substring(at + 1);
+        if (!suffix.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+            return false;
+        return TryResolveLocalDirectoryFromFilePackageSuffix(suffix, out directoryFullPath);
     }
 
     static bool IsPicoOpenXrPackageInstalled()
@@ -282,23 +363,35 @@ public static class ApplyXrTargetEditor
     static bool TryValidatePicoSdkOnDiskBeforeAdd(string specifier, out string error)
     {
         error = null;
-        var at = specifier.IndexOf('@');
-        if (at < 0)
+        if (!TryGetDirectoryFromLocalFilePackageSpecifier(specifier, out var full))
             return true;
-        var src = specifier.Substring(at + 1);
-        if (!src.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+        if (Directory.Exists(full))
             return true;
-        var rel = src.Substring(5).TrimStart('/', '\\');
-        var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-        var full = Path.GetFullPath(Path.Combine(projectRoot, rel));
-        if (!Directory.Exists(full))
+
+        var usingCustomSpecifier = !string.IsNullOrWhiteSpace(EditorPrefs.GetString(EditorPrefsPicoOpenXrSpecifier, ""));
+        if (usingCustomSpecifier)
         {
             error =
-                $"PICO OpenXR SDK folder not found: {full}. Install the SDK or set EditorPrefs \"{EditorPrefsPicoOpenXrSpecifier}\" to the full add string (e.g. {PicoOpenXrPackageId}@{PicoOpenXrPackageSource}).";
+                $"PICO OpenXR SDK folder not found: {full}. Fix EditorPrefs \"{EditorPrefsPicoOpenXrSpecifier}\" (use an absolute path, e.g. {PicoOpenXrPackageId}@file:/Users/you/path/Unity OpenXR IntegrationSDK-1.4.0-20250407).";
             return false;
         }
 
-        return true;
+        var lines = new System.Collections.Generic.List<string>
+        {
+            $"PICO OpenXR SDK folder not found: {full}",
+            "Download the PICO Unity OpenXR Integration SDK and place it in one of these locations (relative to the project folder), or set EditorPrefs \"" +
+                EditorPrefsPicoOpenXrSpecifier + "\":"
+        };
+        foreach (var cand in PicoOpenXrPackageSourceCandidates)
+        {
+            if (TryResolveLocalDirectoryFromFilePackageSuffix(cand, out var p))
+                lines.Add($"  • {p}");
+        }
+
+        lines.Add(
+            $"Example EditorPrefs (absolute path, recommended): {PicoOpenXrPackageId}@file:/full/path/to/Unity OpenXR IntegrationSDK-1.4.0-20250407");
+        error = string.Join(Environment.NewLine, lines);
+        return false;
     }
 
     static void WaitForRequest(Request req, Action<Request> onDone)
