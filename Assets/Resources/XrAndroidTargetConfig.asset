@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8e7d6c5b4a3928170695a4b3c2d1e0f, type: 3}
   m_Name: XrAndroidTargetConfig
   m_EditorClassIdentifier: 
-  activeVendor: 2
+  activeVendor: 0

@@ -6,13 +6,16 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
 /// <summary>
 /// Applies Android XR vendor selection: Resources config, OpenXR YAML feature toggles, Android scripting defines,
 /// optional vendor-specific main manifest from <c>Assets/XRBuildTools/PlatformAndroidManifests/&lt;Meta|Pico|Htc&gt;/AndroidManifest.xml</c>,
 /// and (Unity 6) the active Build Profile under <c>Assets/Settings/Build Profiles/</c>.
-/// <c>com.htc.upm.vive.openxr</c> and <c>com.unity.xr.openxr.picoxr</c> stay in <c>Packages/manifest.json</c> so merged Open XR settings deserialize; vendor behavior is toggled here, not by removing packages.
+/// <c>com.htc.upm.vive.openxr</c> stays in <c>Packages/manifest.json</c>. <b>PICO OpenXR</b> (<c>com.unity.xr.openxr.picoxr</c>) is not in the default manifest (licensing);
+/// <see cref="Apply"/> adds it via Package Manager when switching to PICO and removes it for Meta/HTC.
 /// <para />
 /// <b>PICO</b> uses Unity’s merged main manifest (no <c>Assets/Plugins/Android/AndroidManifest.xml</c>) unless you add a template under the Pico folder.
 /// <b>Meta / HTC</b> use a sidecar manifest when present (e.g. deep links); otherwise the same merge behavior as PICO.
@@ -44,6 +47,12 @@ public static class ApplyXrTargetEditor
     const string PlatformAndroidManifestsRoot = "Assets/XRBuildTools/PlatformAndroidManifests";
     const string PluginsAndroidManifestAssetPath = "Assets/Plugins/Android/AndroidManifest.xml";
 
+    const string PicoOpenXrPackageId = "com.unity.xr.openxr.picoxr";
+    /// <summary>Default local PICO OpenXR SDK path (Unity <c>file:</c> source, relative to project root). Override with EditorPrefs key <c>AbxrPicoOpenXrPackageSpecifier</c> (full <c>package@source</c> string).</summary>
+    const string PicoOpenXrPackageSource = "file:../../Unity OpenXR IntegrationSDK-1.4.0-20250407";
+
+    const string EditorPrefsPicoOpenXrSpecifier = "AbxrPicoOpenXrPackageSpecifier";
+
     [MenuItem("XRBuildTools/Android XR Target/Meta (Quest)")]
     public static void ApplyMeta() => Apply(XrAndroidTargetConfig.Vendor.Meta);
 
@@ -67,26 +76,76 @@ public static class ApplyXrTargetEditor
             return;
         }
 
-        if (!TryRestoreOpenXrFromBaseline())
+        void Core()
+        {
+            if (!TryRestoreOpenXrFromBaseline())
+                return;
+
+            var v = cfg.activeVendor;
+            ToggleOpenXrYamlFeatures(v);
+            SetAndroidScriptingDefines(v);
+            TrySetActiveBuildProfile(v);
+            ApplyPlatformAndroidManifest(v);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline; toggles, defines, Build Profile, and Android manifest re-applied for vendor = {v}.");
+        }
+
+        if (cfg.activeVendor == XrAndroidTargetConfig.Vendor.Pico && !IsPicoOpenXrPackageInstalled())
+        {
+            if (!TryValidatePicoSdkOnDiskBeforeAdd(GetPicoOpenXrAddSpecifier(), out var err))
+            {
+                Debug.LogError("[ApplyXrTarget] " + err);
+                return;
+            }
+
+            var addReq = Client.Add(GetPicoOpenXrAddSpecifier());
+            WaitForRequest(addReq, r =>
+            {
+                if (r.Status != StatusCode.Success)
+                {
+                    Debug.LogError($"[ApplyXrTarget] Failed to add PICO OpenXR package: {r.Error?.message}");
+                    return;
+                }
+
+                AssetDatabase.Refresh();
+                Core();
+            });
             return;
+        }
 
-        var v = cfg.activeVendor;
-        ToggleOpenXrYamlFeatures(v);
-        SetAndroidScriptingDefines(v);
-        TrySetActiveBuildProfile(v);
-        ApplyPlatformAndroidManifest(v);
+        if (cfg.activeVendor != XrAndroidTargetConfig.Vendor.Pico && IsPicoOpenXrPackageInstalled())
+        {
+            var removeReq = Client.Remove(PicoOpenXrPackageId);
+            WaitForRequest(removeReq, r =>
+            {
+                if (r.Status != StatusCode.Success)
+                    Debug.LogWarning($"[ApplyXrTarget] Could not remove PICO OpenXR package: {r.Error?.message}");
+                AssetDatabase.Refresh();
+                Core();
+            });
+            return;
+        }
 
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline; toggles, defines, Build Profile, and Android manifest re-applied for vendor = {v}.");
+        Core();
     }
 
     public static void Apply(XrAndroidTargetConfig.Vendor vendor)
+    {
+        Apply(vendor, null);
+    }
+
+    /// <summary>
+    /// Applies vendor settings. <paramref name="onComplete"/> is invoked with false if PICO package install fails (PICO only) or remove fails critically; otherwise true after apply finishes.
+    /// </summary>
+    public static void Apply(XrAndroidTargetConfig.Vendor vendor, Action<bool> onComplete)
     {
         var cfg = AssetDatabase.LoadAssetAtPath<XrAndroidTargetConfig>(ConfigResourcePath);
         if (cfg == null)
         {
             Debug.LogError("[ApplyXrTarget] Missing XrAndroidTargetConfig at " + ConfigResourcePath);
+            onComplete?.Invoke(false);
             return;
         }
 
@@ -94,6 +153,68 @@ public static class ApplyXrTargetEditor
         cfg.activeVendor = vendor;
         EditorUtility.SetDirty(cfg);
 
+        void FinishApply()
+        {
+            ApplyInternal(vendor);
+            onComplete?.Invoke(true);
+        }
+
+        if (vendor == XrAndroidTargetConfig.Vendor.Pico)
+        {
+            if (IsPicoOpenXrPackageInstalled())
+            {
+                FinishApply();
+                return;
+            }
+
+            if (!TryValidatePicoSdkOnDiskBeforeAdd(GetPicoOpenXrAddSpecifier(), out var err))
+            {
+                Debug.LogError("[ApplyXrTarget] " + err);
+                onComplete?.Invoke(false);
+                return;
+            }
+
+            Debug.Log("[ApplyXrTarget] Adding PICO OpenXR package (not in default manifest for licensing)…");
+            var addReq = Client.Add(GetPicoOpenXrAddSpecifier());
+            WaitForRequest(addReq, r =>
+            {
+                if (r.Status != StatusCode.Success)
+                {
+                    Debug.LogError($"[ApplyXrTarget] Failed to add PICO OpenXR package: {r.Error?.message}");
+                    onComplete?.Invoke(false);
+                    return;
+                }
+
+                AssetDatabase.Refresh();
+                FinishApply();
+            });
+            return;
+        }
+
+        if (IsPicoOpenXrPackageInstalled())
+        {
+            Debug.Log("[ApplyXrTarget] Removing PICO OpenXR package for Meta/HTC default…");
+            var removeReq = Client.Remove(PicoOpenXrPackageId);
+            WaitForRequest(removeReq, r =>
+            {
+                if (r.Status != StatusCode.Success)
+                {
+                    Debug.LogError($"[ApplyXrTarget] Failed to remove PICO OpenXR package: {r.Error?.message}");
+                    onComplete?.Invoke(false);
+                    return;
+                }
+
+                AssetDatabase.Refresh();
+                FinishApply();
+            });
+            return;
+        }
+
+        FinishApply();
+    }
+
+    static void ApplyInternal(XrAndroidTargetConfig.Vendor vendor)
+    {
         TryRestoreOpenXrFromBaseline();
         ToggleOpenXrYamlFeatures(vendor);
         SetAndroidScriptingDefines(vendor);
@@ -103,6 +224,60 @@ public static class ApplyXrTargetEditor
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Restored OpenXR from baseline (if present), applied toggles, Build Profile, manifest, and defines.");
+    }
+
+    static string GetPicoOpenXrAddSpecifier()
+    {
+        var o = EditorPrefs.GetString(EditorPrefsPicoOpenXrSpecifier, "");
+        if (!string.IsNullOrWhiteSpace(o))
+            return o.Trim();
+        return $"{PicoOpenXrPackageId}@{PicoOpenXrPackageSource}";
+    }
+
+    static bool IsPicoOpenXrPackageInstalled()
+    {
+        return PackageInfo.FindForPackage(PicoOpenXrPackageId) != null;
+    }
+
+    static bool TryValidatePicoSdkOnDiskBeforeAdd(string specifier, out string error)
+    {
+        error = null;
+        var at = specifier.IndexOf('@');
+        if (at < 0)
+            return true;
+        var src = specifier.Substring(at + 1);
+        if (!src.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+            return true;
+        var rel = src.Substring(5).TrimStart('/', '\\');
+        var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        var full = Path.GetFullPath(Path.Combine(projectRoot, rel));
+        if (!Directory.Exists(full))
+        {
+            error =
+                $"PICO OpenXR SDK folder not found: {full}. Install the SDK or set EditorPrefs \"{EditorPrefsPicoOpenXrSpecifier}\" to the full add string (e.g. {PicoOpenXrPackageId}@{PicoOpenXrPackageSource}).";
+            return false;
+        }
+
+        return true;
+    }
+
+    static void WaitForRequest(Request req, Action<Request> onDone)
+    {
+        if (req == null)
+        {
+            onDone(null);
+            return;
+        }
+
+        void Tick()
+        {
+            if (!req.IsCompleted)
+                return;
+            EditorApplication.update -= Tick;
+            onDone(req);
+        }
+
+        EditorApplication.update += Tick;
     }
 
     /// <summary>

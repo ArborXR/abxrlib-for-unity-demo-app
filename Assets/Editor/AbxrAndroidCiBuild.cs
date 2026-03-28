@@ -25,37 +25,45 @@ public static class AbxrAndroidCiBuild
             return;
         }
 
-        ApplyXrTargetEditor.Apply(v.Value);
-
-        var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
-        if (scenes.Length == 0)
+        ApplyXrTargetEditor.Apply(v.Value, ok =>
         {
-            Debug.LogError("[AbxrAndroidCiBuild] No scenes in Build Settings.");
-            EditorApplication.Exit(2);
-            return;
-        }
+            if (!ok)
+            {
+                Debug.LogError("[AbxrAndroidCiBuild] Apply XR target failed (PICO OpenXR package add/remove). For PICO, install the SDK at the path in ApplyXrTargetEditor or set EditorPrefs AbxrPicoOpenXrPackageSpecifier.");
+                EditorApplication.Exit(4);
+                return;
+            }
 
-        var outDir = Environment.GetEnvironmentVariable("ABXR_BUILD_OUTPUT_DIR") ?? "Builds/Android";
-        var name = Environment.GetEnvironmentVariable("ABXR_BUILD_NAME") ?? "abxrlibforunitydemoapp";
-        var path = $"{outDir}/{name}.apk".Replace("\\", "/");
+            var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+            if (scenes.Length == 0)
+            {
+                Debug.LogError("[AbxrAndroidCiBuild] No scenes in Build Settings.");
+                EditorApplication.Exit(2);
+                return;
+            }
 
-        var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
-        {
-            scenes = scenes,
-            locationPathName = path,
-            target = BuildTarget.Android,
-            options = BuildOptions.None
+            var outDir = Environment.GetEnvironmentVariable("ABXR_BUILD_OUTPUT_DIR") ?? "Builds/Android";
+            var name = Environment.GetEnvironmentVariable("ABXR_BUILD_NAME") ?? "abxrlibforunitydemoapp";
+            var path = $"{outDir}/{name}.apk".Replace("\\", "/");
+
+            var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = path,
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            });
+
+            if (r.summary.result != BuildResult.Succeeded)
+            {
+                Debug.LogError("[AbxrAndroidCiBuild] Build failed: " + r.summary.result);
+                EditorApplication.Exit(3);
+                return;
+            }
+
+            Debug.Log("[AbxrAndroidCiBuild] Build succeeded: " + path);
+            EditorApplication.Exit(0);
         });
-
-        if (r.summary.result != BuildResult.Succeeded)
-        {
-            Debug.LogError("[AbxrAndroidCiBuild] Build failed: " + r.summary.result);
-            EditorApplication.Exit(3);
-            return;
-        }
-
-        Debug.Log("[AbxrAndroidCiBuild] Build succeeded: " + path);
-        EditorApplication.Exit(0);
     }
 
     static XrAndroidTargetConfig.Vendor? ParseVendor(string raw)
