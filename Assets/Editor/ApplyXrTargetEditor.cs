@@ -83,12 +83,15 @@ public static class ApplyXrTargetEditor
 
             var v = cfg.activeVendor;
             ToggleOpenXrYamlFeatures(v);
+            SyncOpenXrAssetAfterYamlRewrite();
             SetAndroidScriptingDefines(v);
             TrySetActiveBuildProfile(v);
             ApplyPlatformAndroidManifest(v);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            ReassertOpenXrYamlAfterDatabaseFlush(v);
+            ScheduleDeferredOpenXrYamlReassert(v);
             Debug.Log($"[ApplyXrTarget] Restored OpenXR from baseline; toggles, defines, Build Profile, and Android manifest re-applied for vendor = {v}.");
         }
 
@@ -217,12 +220,15 @@ public static class ApplyXrTargetEditor
     {
         TryRestoreOpenXrFromBaseline();
         ToggleOpenXrYamlFeatures(vendor);
+        SyncOpenXrAssetAfterYamlRewrite();
         SetAndroidScriptingDefines(vendor);
         TrySetActiveBuildProfile(vendor);
         ApplyPlatformAndroidManifest(vendor);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
+        ReassertOpenXrYamlAfterDatabaseFlush(vendor);
+        ScheduleDeferredOpenXrYamlReassert(vendor);
         Debug.Log($"[ApplyXrTarget] Active vendor = {vendor}. Restored OpenXR from baseline (if present), applied toggles, Build Profile, manifest, and defines.");
     }
 
@@ -336,7 +342,8 @@ public static class ApplyXrTargetEditor
             yaml = yaml.Replace(OpenXrYamlMainNameBaseline, OpenXrYamlMainNameActive, StringComparison.Ordinal);
         File.WriteAllText(targetFull, yaml);
 
-        AssetDatabase.ImportAsset(OpenXrSettingsAssetPath, ImportAssetOptions.ForceUpdate);
+        // Do not ImportAsset here: loading the baseline into memory before ToggleOpenXrYamlFeatures lets SaveAssets
+        // serialize stale OpenXR state. The first Import happens in SyncOpenXrAssetAfterYamlRewrite after toggles.
         return true;
     }
 
@@ -496,6 +503,37 @@ public static class ApplyXrTargetEditor
         }
 
         File.WriteAllText(full, string.Concat(parts));
+    }
+
+    /// <summary>
+    /// <see cref="ToggleOpenXrYamlFeatures"/> rewrites YAML on disk; reimport so Unity memory matches before other SaveAssets work.
+    /// </summary>
+    static void SyncOpenXrAssetAfterYamlRewrite()
+    {
+        AssetDatabase.ImportAsset(OpenXrSettingsAssetPath, ImportAssetOptions.ForceUpdate);
+    }
+
+    /// <summary>
+    /// After <see cref="AssetDatabase.SaveAssets"/> / <see cref="AssetDatabase.Refresh"/>, Unity or the OpenXR importer can rewrite
+    /// <c>Open XR Package Settings.asset</c>. Re-apply vendor toggles from the current file contents and sync again.
+    /// </summary>
+    static void ReassertOpenXrYamlAfterDatabaseFlush(XrAndroidTargetConfig.Vendor vendor)
+    {
+        ToggleOpenXrYamlFeatures(vendor);
+        SyncOpenXrAssetAfterYamlRewrite();
+    }
+
+    /// <summary>
+    /// Refresh can finish OpenXR reimport on a later editor tick; one more toggle pass catches async overwrites.
+    /// </summary>
+    static void ScheduleDeferredOpenXrYamlReassert(XrAndroidTargetConfig.Vendor vendor)
+    {
+        EditorApplication.delayCall += () =>
+        {
+            if (EditorApplication.isCompiling)
+                return;
+            ReassertOpenXrYamlAfterDatabaseFlush(vendor);
+        };
     }
 
     static bool IsPicoOpenXrBlock(string block)
