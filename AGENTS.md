@@ -14,6 +14,13 @@ Example Unity VR/XR project that demonstrates the AbxrLib SDK: configuration, au
 - **Prerequisites:** Unity 2022.3 LTS or later; AbxrLib SDK (abxrlib-for-unity) installed as a package.
 - **Scenes / usage:** See README and `Assets/Scenes/` (e.g. TrainingDemo.unity). Run in editor or build to Android/WebGL.
 
+### PICO + AbxrLib QR (enterprise)
+
+- **Dual local SDKs:** `Packages/manifest.json` references `com.unity.xr.picoxr` and `com.unity.xr.openxr.picoxr` as **`file:../../…`** packages. Those folders must exist **next to this repo’s parent** (workspace root). Generate them with **`tools/pico-setup-demo-sdks.sh`**; see **`tools/README.md`**.
+- **Editor check:** `Assets/Editor/PicoDemoSdkPathValidator.cs` warns once if those paths are missing.
+- **Android:** `Assets/Plugins/Android/AndroidManifest.xml` merges `UnityPlayerActivity` with **MAIN / LAUNCHER** (so Build & Run finds a launcher) and adds `<queries>` for `com.pvr.tobservice` (PICO TOB QR). After changing PICO SDK copies, run **`tools/pico-setup-demo-sdks.sh`** so `applogrs` Windows plugins are not enabled for Android (avoids Bee “applogrs.dll.lib is not supported on Android”).
+- **Defines:** Android **Scripting Define Symbols** should include **`PICO_ENTERPRISE_SDK_3`** so AbxrLib compiles `QRCodeReaderPico` (see AbxrLib `Editor/PicoDefineManager.cs`).
+
 ### How it uses other projects
 
 - **abxrlib-for-unity:** This demo **depends on** the AbxrLib Unity package. It uses the SDK for analytics, authentication, and (on Android) optional communication with the ArborInsightsClient. Setup and integration details are in **abxrlib-for-unity** (README and that repo’s `AGENTS.md`).

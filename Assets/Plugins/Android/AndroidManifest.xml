@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.unity3d.player">
+    <!--
+      Merged into the final APK by Unity (Plugins/Android).
+      Ensure MAIN/LAUNCHER exists so Build & Run / adb can start the app (PICO + Unity sometimes
+      produce a merged manifest without a visible launcher if only <queries> is supplied).
+    -->
+    <application>
+        <activity
+            android:name="com.unity3d.player.UnityPlayerActivity"
+            android:exported="true"
+            android:theme="@style/UnityThemeSelector"
+            tools:node="merge">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+    <!-- Android 11+ package visibility: PICO TOB QR (com.pvr.tobservice). -->
+    <queries>
+        <package android:name="com.pvr.tobservice" />
+    </queries>
+</manifest>

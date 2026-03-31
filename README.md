@@ -20,6 +20,18 @@ The project includes various prefabs, scenes, and scripts that demonstrate best 
 - AbxrLib SDK installed
 - XR-compatible device (for testing)
 
+### PICO Android builds (AbxrLib enterprise QR)
+
+This demo uses **OpenXR** plus **PICO Unity Integration** so AbxrLib can use `PXR_Enterprise` / TOB for QR (`QRCodeReaderPico`). That requires a **dual-SDK workspace** — not a single PICO package from the registry.
+
+1. Place this repo next to **`abxrlib-for-unity`** and the generated PICO folders (see **`tools/README.md`**).
+2. From the demo repo root run: **`bash tools/pico-setup-demo-sdks.sh`** (after unzipping the official PICO SDKs).
+3. Open Unity; the Editor logs a **warning** if `Unity OpenXR IntegrationSDK-demo-app` or `PICO Unity Integration SDK-demo-app` are missing next to this project — fix paths before building.
+4. **Player → Android**: ensure **`PICO_ENTERPRISE_SDK_3`** appears under **Scripting Define Symbols** (often added automatically when the PICO Integration package is present).
+5. The repo includes **`Assets/Plugins/Android/AndroidManifest.xml`** that merges **MAIN/LAUNCHER** for `UnityPlayerActivity` (fixes “No activity in the manifest with action MAIN and category LAUNCHER” on some PICO/Unity merges) and a `<queries>` entry for `com.pvr.tobservice`.
+6. If the build warns that **`applogrs.dll.lib` is not supported on Android**, re-run **`bash tools/pico-setup-demo-sdks.sh`** (it patches those Windows-only PICO plugins) or manually set those plugins to **exclude Android** in the Plugin Inspector.
+7. **`appId is ignored`** / PICO Platform messages during build are from the PICO package and are safe to ignore unless you use PICO’s store entitlement flow.
+
 ### Setup Instructions
 1. **Install Unity**: Download and install Unity 2022.3 LTS from [unity.com](https://unity.com)
 2. **Install AbxrLib SDK**: 
