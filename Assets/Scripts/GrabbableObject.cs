@@ -50,9 +50,21 @@ public class GrabbableObject : MonoBehaviour
     }
 
     /// <summary>
-    /// Handles release/drop events - re-enables the Dropper's AbxrTarget when item is dropped
-    /// Note: TargetLocation.OnRelease() also re-enables it, but this ensures it happens even if
-    /// the item is dropped away from any target location
+    /// WebGL / non-XR grab path does not wire <see cref="UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable.selectExited"/> to <see cref="TargetLocation"/>.
+    /// Call this from <see cref="DesktopInputController"/> when dropping so shelf placement is evaluated.
+    /// </summary>
+    public void NotifyTargetLocationsOfRelease()
+    {
+        TargetLocation[] locations = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
+        foreach (TargetLocation loc in locations)
+        {
+            if (loc == null) continue;
+            loc.OnGrabbableReleased(this);
+        }
+    }
+
+    /// <summary>
+    /// Handles release/drop events for Abxr logging when item is dropped.
     /// </summary>
     private void HandleReleaseEvent()
     {
