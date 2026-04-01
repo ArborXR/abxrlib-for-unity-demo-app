@@ -6,8 +6,10 @@ public class TargetLocation : MonoBehaviour
 {
     public GrabbableObjectManager.GrabbableObjectType targetType;
     public double positionError = .2;
-    // 0.0000004 = 1 degree
-    public double rotationError = 0.000004; // 20 Degrees
+    /// <summary>Max rotation mismatch (same metric as <see cref="CompareQuaternions"/>). Ignored when <see cref="requireRotationMatch"/> is false.</summary>
+    public double rotationError = 0.15;
+    [Tooltip("If off, only position must match the slot (recommended for desktop/mouse grab where the object follows camera rotation).")]
+    public bool requireRotationMatch = false;
     public UnityEvent<CompletionData> OnCompleted;
 
     public struct CompletionData
@@ -35,25 +37,47 @@ public class TargetLocation : MonoBehaviour
     {
         // Is Valid Collision
         if (collider.gameObject.GetComponent<GrabbableObject>() == null) return;
-        completionData.positionDistance = Vector3.Distance(collider.transform.position, this.transform.position);
-        completionData.rotationDistance = CompareQuaternions(collider.transform.rotation, this.transform.rotation);
-        completionData.validPlacement = completionData.positionDistance < positionError && completionData.rotationDistance < rotationError;
-        completionData.usedType = collider.gameObject.GetComponent<GrabbableObject>().type;
-        completionData.usedObject = collider.gameObject;
-        completionData.usedTarget = this.gameObject;
+        ApplyPlacementSample(collider.transform, collider.gameObject.GetComponent<GrabbableObject>());
     }
 
     public void OnTriggerExit(Collider collider)
     {
         completionData.validPlacement = false;
     }
-    public void OnRelease()
+
+    /// <summary>
+    /// Called when a grabbable is released (XR selectExited or WebGL drop). Evaluates placement from the
+    /// object transform at release time so we are not dependent on OnTriggerStay/Exit ordering.
+    /// </summary>
+    public void OnGrabbableReleased(GrabbableObject grabbable)
     {
+        if (grabbable == null || OnCompleted == null) return;
+        // Stale listeners can still hold references to a TargetLocation removed after a successful placement.
+        if (!this || !isActiveAndEnabled) return;
+
+        Collider triggerCol = GetComponent<Collider>();
+        Collider grabbableCol = grabbable.GetComponent<Collider>();
+        if (triggerCol == null || grabbableCol == null) return;
+        if (!triggerCol.bounds.Intersects(grabbableCol.bounds)) return;
+
+        ApplyPlacementSample(grabbable.transform, grabbable);
+
         string jsonData = JsonUtility.ToJson(completionData);
         Abxr.LogInfo(jsonData);
-        //Debug.Log(jsonData);
-        if (!completionData.validPlacement || OnCompleted == null) return;
+
+        if (!completionData.validPlacement) return;
         isCompleted = true;
+    }
+
+    private void ApplyPlacementSample(Transform sample, GrabbableObject grabbable)
+    {
+        completionData.positionDistance = Vector3.Distance(sample.position, transform.position);
+        completionData.rotationDistance = CompareQuaternions(sample.rotation, transform.rotation);
+        bool rotationOk = !requireRotationMatch || completionData.rotationDistance < rotationError;
+        completionData.validPlacement = completionData.positionDistance < positionError && rotationOk;
+        completionData.usedType = grabbable.type;
+        completionData.usedObject = grabbable.gameObject;
+        completionData.usedTarget = gameObject;
     }
 
     public void Update()

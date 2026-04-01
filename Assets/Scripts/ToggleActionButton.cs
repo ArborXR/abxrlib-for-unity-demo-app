@@ -33,9 +33,9 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         {
             // For demonstration, let's log an Abxr interaction
             Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveStart");
-            Abxr.EventObjectiveStart("toggle_button_first_action");
+            Abxr.EventObjectiveStart("LunchBreakToAvoidWork");
             Debug.Log("ToggleActionButton: About to call Abxr.EventObjectiveComplete");
-            Abxr.EventObjectiveComplete("toggle_button_first_action", 100, Abxr.EventStatus.Complete);
+            Abxr.EventObjectiveComplete("LunchBreakToAvoidWork", 100, Abxr.EventStatus.Complete);
             Debug.Log("ToggleActionButton: Successfully completed first action");
         }
         catch (System.Exception ex)
@@ -49,11 +49,12 @@ public class ToggleActionButton : UnityEngine.XR.Interaction.Toolkit.Interactabl
         Debug.Log($"ToggleActionButton - {secondActionName}");
               
         // For demonstration, let's log an Abxr interaction
-        //Abxr.EventInteractionStart("toggle_button_second_action");
-        //Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
+        Abxr.EventInteractionStart("toggle_button_second_action");
+        Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
 
-        Debug.Log("ToggleActionButton: PerformSecondAction() - About to send assessment complete");
-        //Abxr.EventAssessmentComplete("stocking_training_unit_1", "88", result: Abxr.EventStatus.Pass);
+        int assessmentScore = Random.Range(75, 101);
+        Debug.Log($"ToggleActionButton: PerformSecondAction() - About to send assessment complete (score {assessmentScore})");
+        Abxr.EventAssessmentComplete("stocking_training_unit_1", assessmentScore.ToString(), result: Abxr.EventStatus.Pass);
         Debug.Log("ToggleActionButton: PerformSecondAction() - Assessment complete sent, waiting before exit");
         
         // Wait a moment for the assessment to be sent before exiting

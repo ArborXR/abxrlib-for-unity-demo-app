@@ -65,14 +65,24 @@ public class GrabbableObjectManager : MonoBehaviour
         // Get All Targets (runtime safety check for WebGL)
         if (Application.platform != RuntimePlatform.WebGLPlayer)
         {
-            TargetLocation[] targetLocations = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
-            foreach (TargetLocation targetLocation in targetLocations)
+            var xrGrab = obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (xrGrab != null)
             {
-                var xrGrab = obj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-                if (xrGrab != null)
+                // Do not rely on SelectExitEventArgs.interactableObject — DesktopInputController invokes selectExited
+                // with an empty args instance, so the grabbable must come from this interactable.
+                // Resolve TargetLocations when the drop happens — not at spawn — so we never call into destroyed slots
+                // after CompleteTask removes TargetLocation from filled shelves.
+                xrGrab.selectExited.AddListener(_ =>
                 {
-                    xrGrab.selectExited.AddListener(interactable => targetLocation.OnRelease());
-                }
+                    var grabbable = xrGrab.GetComponent<GrabbableObject>();
+                    if (grabbable == null) return;
+                    TargetLocation[] targets = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None);
+                    foreach (TargetLocation targetLocation in targets)
+                    {
+                        if (targetLocation == null) continue;
+                        targetLocation.OnGrabbableReleased(grabbable);
+                    }
+                });
             }
         }
 
