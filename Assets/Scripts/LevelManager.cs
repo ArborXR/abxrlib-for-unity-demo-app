@@ -11,8 +11,17 @@ public class LevelManager : MonoBehaviour
     public AudioSource failureAudioSource;
     public AudioSource victoryAudioSource;
     public double score;
+    [Tooltip("Minimum final assessment score (0–100) to count as Pass. Below this, EventAssessmentComplete uses Fail.")]
+    [Range(0, 100)]
+    public int minPassingScore = 70;
     private int _totalTargets;
     private int _completedTargets;
+
+    /// <summary>
+    /// Rough max raw points per correct placement: position term capped at 5 plus rotation term up to ~1.
+    /// Used to map cumulative <see cref="score"/> to 0–100 for analytics.
+    /// </summary>
+    private const double MaxRawPointsPerCorrectPlacement = 6.0;
     private void Start()
     {
         Debug.Log("LevelManager: Start()");
@@ -38,18 +47,48 @@ public class LevelManager : MonoBehaviour
 
     private void CheckForCompletion()
     {
-        if (_completedTargets >= _totalTargets)
+        if (_completedTargets < _totalTargets || _totalTargets <= 0)
+            return;
+
+        int completionScore = ComputeNormalizedCompletionScore();
+        bool passed = completionScore >= minPassingScore;
+
+        var assessmentMetadata = new Abxr.Dict
         {
-            const int completionScore = 100;
-            var assessmentMetadata = new Abxr.Dict
-            {
-                ["mode"] = "easy",
-                ["touched_floor"] = "true",
-                ["max_score"] = "100"
-            };
+            ["mode"] = "easy",
+            ["touched_floor"] = "true",
+            ["max_score"] = "100",
+            ["completed_slots"] = _completedTargets.ToString(),
+            ["total_slots"] = _totalTargets.ToString(),
+            ["raw_score"] = score.ToString("F2"),
+            ["min_passing_score"] = minPassingScore.ToString(),
+            ["normalized_score"] = completionScore.ToString()
+        };
+
+        if (passed)
+        {
             Abxr.EventAssessmentComplete("stocking_training_unit_1", completionScore, Abxr.EventStatus.Pass, meta: assessmentMetadata);
             PlaySuccessSound();
         }
+        else
+        {
+            assessmentMetadata["reason"] = "below_score_threshold";
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", completionScore, Abxr.EventStatus.Fail, meta: assessmentMetadata);
+            PlayFailSound();
+        }
+    }
+
+    /// <summary>
+    /// Maps cumulative raw <see cref="score"/> to 0–100. Raw score sums per placement:
+    /// min(5, 1/positionDistance) + (1 - rotationDistance), then ×1 for correct type (see CompleteTask).
+    /// Without normalization, raw sums often exceed 100 and clamp to 100, so thresholds were meaningless.
+    /// </summary>
+    private int ComputeNormalizedCompletionScore()
+    {
+        double maxRaw = MaxRawPointsPerCorrectPlacement * _totalTargets;
+        if (maxRaw <= 0) return 0;
+        double normalized = score / maxRaw * 100.0;
+        return Mathf.Clamp((int)System.Math.Round(normalized), 0, 100);
     }
 
     private void CheckRunTime()
@@ -86,9 +125,14 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            Abxr.EventInteractionComplete("toggle_button_second_action", Abxr.InteractionType.Text, Abxr.InteractionResult.Neutral, "Second action completed");
-            //Abxr.EventInteractionComplete($"place_item_{objectId}", "False", "Wrong spot", Abxr.InteractionType.Bool, placementMetadata);
-            //Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Incorrect, "Wrong spot", placementMetadata);
+            Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Incorrect, "Wrong spot", placementMetadata);
+            var failMeta = new Abxr.Dict
+            {
+                ["reason"] = "wrong_slot",
+                ["placed_fruit"] = completionData.usedType.ToString(),
+                ["intended_fruit"] = completionData.targetType.ToString()
+            };
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", 0, Abxr.EventStatus.Fail, meta: failMeta);
             Abxr.LogCritical($"Improper placement of {completionData.usedType}");
             StartCoroutine(PlayFailSoundThenRestart());
         }
@@ -101,8 +145,7 @@ public class LevelManager : MonoBehaviour
                 ["placed_fruit"] = completionData.usedType.ToString(),
                 ["intended_fruit"] = completionData.targetType.ToString()
             };
-            //Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Correct, "Correct spot", placementMetadata);
-            //Abxr.EventInteractionComplete($"place_item_{objectId}", "True", "Correct spot", Abxr.InteractionType.Bool, placementMetadata);
+            Abxr.EventInteractionComplete($"place_item_{objectId}", Abxr.InteractionType.Bool, Abxr.InteractionResult.Correct, "Correct spot", placementMetadata);
 
             StartCoroutine(PlaySuccessSoundAndCheckVictory());
         }
@@ -194,9 +237,11 @@ public class LevelManager : MonoBehaviour
         {
             Debug.Log("=== AUTHENTICATION COMPLETED - FAILURE ===");
             Debug.Log("Error: " + error);
-            return;
         }
-        Debug.Log("=== AUTHENTICATION COMPLETED - SUCCESS ===");
+        else
+        {
+            Debug.Log("=== AUTHENTICATION COMPLETED - SUCCESS ===");
+        }
 
         //var authResponse = Abxr.GetAuthResponse();
         //Debug.Log("=== AUTHENTICATION COMPLETED - AUTH RESPONSE ===");
@@ -222,6 +267,7 @@ public class LevelManager : MonoBehaviour
         }
         Debug.Log("=== AUTHENTICATION COMPLETED ===");
 
+        // Demo: start the level whether auth succeeded or not (e.g. Editor without production credentials).
         if (dropper != null)
             dropper.BeginGameplayAfterAuth();
 
@@ -243,8 +289,6 @@ public class LevelManager : MonoBehaviour
             Debug.Log("Modules defined, will execute next.");
         }
         Debug.Log("=== END MODULE INFORMATION ===");
-
-        return;
     }
     private void Module_b787_baggage_load()
     {

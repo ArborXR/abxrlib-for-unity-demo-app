@@ -20,6 +20,12 @@ public class DesktopInputController : MonoBehaviour
     [SerializeField] private float turnSpeed = 100f;
     [SerializeField] private float mouseSensitivity = 0.5f;
     [SerializeField] private float mouseTurnSensitivity = 0.5f;
+    [Tooltip("Applies gravity so walking off ramps/platforms (e.g. hopper) returns the player to the floor. Horizontal-only Move() caused floating at elevated Y.")]
+    [SerializeField] private bool applyGravity = true;
+    [SerializeField] private float gravityMultiplier = 2f;
+    [SerializeField] private float groundedStickDownVelocity = -2f;
+    [Tooltip("If on, vertical gravity does not run until the first WASD movement, so colliders/floor can finish loading before any downward velocity builds.")]
+    [SerializeField] private bool delayGravityUntilMovement = true;
     
     [Header("Interaction Settings")]
     [SerializeField] private float interactionDistance = 3f;
@@ -46,6 +52,8 @@ public class DesktopInputController : MonoBehaviour
     // Movement state
     private Vector2 moveInput;
     private Vector2 turnInput;
+    private float _verticalVelocity;
+    private bool _gravityMovementStarted;
     private bool isMouseLookActive = false;
     private bool setupComplete = false;
     private float currentPitch = 0f;
@@ -740,6 +748,12 @@ public class DesktopInputController : MonoBehaviour
             var selectExitEventArgs = new SelectExitEventArgs();
             currentGrabbedObject.selectExited.Invoke(selectExitEventArgs);
         }
+        else if (hasWebGLObject && currentGrabbedGameObject != null)
+        {
+            GrabbableObject grabbable = currentGrabbedGameObject.GetComponent<GrabbableObject>();
+            if (grabbable != null)
+                grabbable.NotifyTargetLocationsOfRelease();
+        }
         else if (currentSimpleInteractable != null)
         {
             var selectExitEventArgs = new SelectExitEventArgs();
@@ -773,6 +787,12 @@ public class DesktopInputController : MonoBehaviour
         {
             var selectExitEventArgs = new SelectExitEventArgs();
             currentGrabbedObject.selectExited.Invoke(selectExitEventArgs);
+        }
+        else if (hasWebGLObject && currentGrabbedGameObject != null)
+        {
+            GrabbableObject grabbable = currentGrabbedGameObject.GetComponent<GrabbableObject>();
+            if (grabbable != null)
+                grabbable.NotifyTargetLocationsOfRelease();
         }
         else if (currentSimpleInteractable != null)
         {
@@ -829,10 +849,37 @@ public class DesktopInputController : MonoBehaviour
         forward.Normalize();
         right.Normalize();
         
-        // Calculate movement vector
+        // Calculate horizontal movement
         Vector3 movement = (forward * moveInput.y + right * moveInput.x) * moveSpeed * Time.deltaTime;
+
+        if (applyGravity)
+        {
+            if (delayGravityUntilMovement && !_gravityMovementStarted)
+            {
+                if (moveInput.sqrMagnitude > 1e-6f)
+                {
+                    _gravityMovementStarted = true;
+                    _verticalVelocity = 0f;
+                }
+            }
+
+            bool useGravityNow = !delayGravityUntilMovement || _gravityMovementStarted;
+            if (useGravityNow)
+            {
+                if (characterController.isGrounded)
+                {
+                    if (_verticalVelocity < 0f)
+                        _verticalVelocity = groundedStickDownVelocity;
+                }
+                else
+                {
+                    _verticalVelocity += Physics.gravity.y * gravityMultiplier * Time.deltaTime;
+                }
+
+                movement.y = _verticalVelocity * Time.deltaTime;
+            }
+        }
         
-        // Apply movement
         characterController.Move(movement);
         
         // Apply turning
