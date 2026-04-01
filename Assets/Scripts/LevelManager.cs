@@ -16,6 +16,10 @@ public class LevelManager : MonoBehaviour
     public int minPassingScore = 70;
     private int _totalTargets;
     private int _completedTargets;
+    /// <summary>Set when a full run finishes via <see cref="CheckForCompletion"/> (all slots filled).</summary>
+    private bool _fullRunAssessmentRecorded;
+    /// <summary>Set when the player grabs a fruit (dropper spawns automatically; grab = intentional stocking).</summary>
+    private bool _hasGrabbedFruit;
 
     /// <summary>
     /// Rough max raw points per correct placement: position term capped at 5 plus rotation term up to ~1.
@@ -68,14 +72,74 @@ public class LevelManager : MonoBehaviour
         if (passed)
         {
             Abxr.EventAssessmentComplete("stocking_training_unit_1", completionScore, Abxr.EventStatus.Pass, meta: assessmentMetadata);
+            _fullRunAssessmentRecorded = true;
             PlaySuccessSound();
         }
         else
         {
             assessmentMetadata["reason"] = "below_score_threshold";
             Abxr.EventAssessmentComplete("stocking_training_unit_1", completionScore, Abxr.EventStatus.Fail, meta: assessmentMetadata);
+            _fullRunAssessmentRecorded = true;
             PlayFailSound();
         }
+    }
+
+    /// <summary>
+    /// Called from <see cref="ExitButton"/> before quitting. Records an Incomplete assessment:
+    /// score 0 and reason <c>exit_before_stocking</c> if no fruit was grabbed; otherwise current
+    /// normalized score and reason <c>early_exit</c> when stocking had begun but not all slots filled.
+    /// </summary>
+    public void TryFinalizeAssessmentBeforeExit()
+    {
+        if (_fullRunAssessmentRecorded)
+        {
+            ExitButton.QuitApplicationImmediate();
+            return;
+        }
+
+        if (!HasBegunStockingActivity())
+        {
+            var metaBeforeStocking = new Abxr.Dict
+            {
+                ["mode"] = "easy",
+                ["reason"] = "exit_before_stocking",
+                ["completed_slots"] = _completedTargets.ToString(),
+                ["total_slots"] = _totalTargets.ToString(),
+                ["raw_score"] = score.ToString("F2"),
+                ["min_passing_score"] = minPassingScore.ToString(),
+                ["normalized_score"] = "0"
+            };
+            Abxr.EventAssessmentComplete("stocking_training_unit_1", 0, Abxr.EventStatus.Incomplete, meta: metaBeforeStocking);
+            _fullRunAssessmentRecorded = true;
+            ExitButton.QuitApplicationImmediate();
+            return;
+        }
+
+        int completionScore = ComputeNormalizedCompletionScore();
+        var meta = new Abxr.Dict
+        {
+            ["mode"] = "easy",
+            ["reason"] = "early_exit",
+            ["completed_slots"] = _completedTargets.ToString(),
+            ["total_slots"] = _totalTargets.ToString(),
+            ["raw_score"] = score.ToString("F2"),
+            ["min_passing_score"] = minPassingScore.ToString(),
+            ["normalized_score"] = completionScore.ToString()
+        };
+        Abxr.EventAssessmentComplete("stocking_training_unit_1", completionScore, Abxr.EventStatus.Incomplete, meta: meta);
+        _fullRunAssessmentRecorded = true;
+        ExitButton.QuitApplicationImmediate();
+    }
+
+    /// <summary>Called from <see cref="GrabbableObject.HandleGrabEvent"/> (VR, desktop, WebGL).</summary>
+    public void NotifyFruitGrabbed()
+    {
+        _hasGrabbedFruit = true;
+    }
+
+    private bool HasBegunStockingActivity()
+    {
+        return _hasGrabbedFruit;
     }
 
     /// <summary>
@@ -106,6 +170,8 @@ public class LevelManager : MonoBehaviour
         _totalTargets = FindObjectsByType<TargetLocation>(FindObjectsSortMode.None).Length;
         _completedTargets = 0;
         score = 0;
+        _fullRunAssessmentRecorded = false;
+        _hasGrabbedFruit = false;
     }
 
     public void CompleteTask(TargetLocation.CompletionData completionData)

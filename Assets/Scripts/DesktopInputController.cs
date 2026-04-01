@@ -670,7 +670,17 @@ public class DesktopInputController : MonoBehaviour
             var resetButton = simpleInteractable.GetComponent<ResetButton>();
             var exitButton = simpleInteractable.GetComponent<ExitButton>();
             var reAuthButton = simpleInteractable.GetComponent<ReAuthenticateButton>();
-            
+
+            // Exit: single path (assessment finalize + quit). Do not Invoke selectEntered — that would duplicate RequestQuit.
+            if (exitButton != null)
+            {
+                exitButton.RequestQuit();
+                var selectExitEventArgsExit = new SelectExitEventArgs();
+                simpleInteractable.selectExited.Invoke(selectExitEventArgsExit);
+                currentSimpleInteractable = null;
+                return;
+            }
+
             // Try the standard XR event system first
             var selectEnterEventArgs = new SelectEnterEventArgs();
             simpleInteractable.selectEntered.Invoke(selectEnterEventArgs);
@@ -685,14 +695,6 @@ public class DesktopInputController : MonoBehaviour
             else if (resetButton != null)
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            }
-            else if (exitButton != null)
-            {
-                #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-                #else
-                Application.Quit();
-                #endif
             }
             else if (reAuthButton != null)
             {
