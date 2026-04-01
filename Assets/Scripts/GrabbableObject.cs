@@ -42,6 +42,9 @@ public class GrabbableObject : MonoBehaviour
     {
         Debug.Log("GrabbableObject: HandleGrabEvent() - Interaction Start");
         Abxr.EventInteractionStart($"place_item_{Id}");
+        LevelManager lm = FindFirstObjectByType<LevelManager>();
+        if (lm != null)
+            lm.NotifyFruitGrabbed();
         
         // Disable the Dropper's AbxrTarget when an item is picked up
         // Uses the target's display name "Dropper" to find and disable it
