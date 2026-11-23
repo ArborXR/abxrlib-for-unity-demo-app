@@ -1,5 +1,11 @@
 # AbxrLib for Unity - Training Demo
 
+> [!IMPORTANT]
+> **This demo has moved.** The samples for AbxrLib for Unity 3.0 are now
+> [ArborXR Insights Samples](https://github.com/ArborXR/insights-samples-for-unity): small Unity samples that
+> each teach one SDK feature and show what it sends to Insights. Try them in the browser at
+> <https://insights-samples.arborxr.com/index.html>. This repository is archived and no longer updated.
+
 A comprehensive XR training application built with Unity that demonstrates the capabilities of the AbxrLib SDK. This demo showcases interactive AR/VR experiences with object manipulation, spatial interactions, and immersive training scenarios.
 
 ## Description
